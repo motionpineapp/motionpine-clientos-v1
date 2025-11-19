@@ -27,7 +27,7 @@ const subscriptionFormSchema = z.object({
   // Use preprocess to handle string input from form safely
   price: z.preprocess(
     (val) => (val === '' || val === undefined ? undefined : Number(val)),
-    z.number({ invalid_type_error: 'Price must be a number' }).min(0.01, 'Price must be greater than 0')
+    z.number().min(0.01, 'Price must be greater than 0')
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
   nextBillingDate: z.string().min(1, 'Start date is required'),
