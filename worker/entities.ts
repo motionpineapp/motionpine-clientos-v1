@@ -1,14 +1,22 @@
 import { IndexedEntity } from "./core-utils";
-import type { 
-  Client, 
-  Project, 
-  Chat, 
-  ChatMessage, 
-  Expense, 
-  Subscription, 
+import type {
+  Client,
+  Project,
+  Chat,
+  ChatMessage,
+  Expense,
+  Subscription,
   TeamMember,
-  PineTransaction
+  PineTransaction,
+  User
 } from "@shared/types";
+// --- UTILS ---
+export async function hashPassword(password: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 // --- SEED DATA ---
 const SEED_CLIENTS: Client[] = [
   {
@@ -343,53 +351,77 @@ const SEED_MESSAGES: ChatMessage[] = [
     senderAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob'
   }
 ];
+// User Seed Data (Password is 'password123')
+export interface UserState extends User {
+  passwordHash: string;
+}
+const SEED_USERS: UserState[] = [
+  {
+    id: 't1',
+    name: 'Sarah Jenkins',
+    email: 'admin@motionpine.com',
+    role: 'admin',
+    company: 'MotionPine Agency',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    passwordHash: 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f'
+  },
+  {
+    id: 'c1',
+    name: 'Alice Freeman',
+    email: 'client@motionpine.com',
+    role: 'client',
+    company: 'Acme Corp',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice',
+    passwordHash: 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f'
+  }
+];
 // --- ENTITIES ---
 export class ClientEntity extends IndexedEntity<Client> {
   static readonly entityName = "client";
   static readonly indexName = "clients";
-  static readonly initialState: Client = { 
-    id: "", name: "", company: "", email: "", status: "active", 
-    totalProjects: 0, totalRevenue: 0, joinedAt: "" 
+  static readonly initialState: Client = {
+    id: "", name: "", company: "", email: "", status: "active",
+    totalProjects: 0, totalRevenue: 0, joinedAt: ""
   };
   static seedData = SEED_CLIENTS;
 }
 export class ProjectEntity extends IndexedEntity<Project> {
   static readonly entityName = "project";
   static readonly indexName = "projects";
-  static readonly initialState: Project = { 
-    id: "", title: "", clientId: "", clientName: "", status: "todo", createdAt: "" 
+  static readonly initialState: Project = {
+    id: "", title: "", clientId: "", clientName: "", status: "todo", createdAt: ""
   };
   static seedData = SEED_PROJECTS;
 }
 export class ExpenseEntity extends IndexedEntity<Expense> {
   static readonly entityName = "expense";
   static readonly indexName = "expenses";
-  static readonly initialState: Expense = { 
-    id: "", item: "", cost: 0, date: "" 
+  static readonly initialState: Expense = {
+    id: "", item: "", cost: 0, date: ""
   };
   static seedData = SEED_EXPENSES;
 }
 export class SubscriptionEntity extends IndexedEntity<Subscription> {
   static readonly entityName = "subscription";
   static readonly indexName = "subscriptions";
-  static readonly initialState: Subscription = { 
-    id: "", name: "", price: 0, billingCycle: "monthly", nextBillingDate: "", status: "active" 
+  static readonly initialState: Subscription = {
+    id: "", name: "", price: 0, billingCycle: "monthly", nextBillingDate: "", status: "active"
   };
   static seedData = SEED_SUBSCRIPTIONS;
 }
 export class TeamMemberEntity extends IndexedEntity<TeamMember> {
   static readonly entityName = "team";
   static readonly indexName = "teams";
-  static readonly initialState: TeamMember = { 
-    id: "", name: "", role: "", email: "", status: "active", joinedAt: "" 
+  static readonly initialState: TeamMember = {
+    id: "", name: "", role: "", email: "", status: "active", joinedAt: ""
   };
   static seedData = SEED_TEAM;
 }
 export class PineTransactionEntity extends IndexedEntity<PineTransaction> {
   static readonly entityName = "pine";
   static readonly indexName = "pines";
-  static readonly initialState: PineTransaction = { 
-    id: "", clientId: "", type: "usage", amount: 0, description: "", date: "" 
+  static readonly initialState: PineTransaction = {
+    id: "", clientId: "", type: "usage", amount: 0, description: "", date: ""
   };
   static seedData: PineTransaction[] = [
     { id: 'pt1', clientId: 'c1', type: 'purchase', amount: 5000, description: 'Initial Credit Purchase', date: '2023-10-01T10:00:00Z' },
@@ -412,18 +444,18 @@ export class ChatEntity extends IndexedEntity<ChatBoardState> {
     return messages;
   }
   async sendMessage(userId: string, text: string): Promise<ChatMessage> {
-    const msg: ChatMessage = { 
-      id: crypto.randomUUID(), 
-      chatId: this.id, 
-      userId, 
-      text, 
+    const msg: ChatMessage = {
+      id: crypto.randomUUID(),
+      chatId: this.id,
+      userId,
+      text,
       ts: Date.now(),
       // In a real app, we'd fetch user details. For now, we'll rely on frontend or simple defaults
       senderName: userId.startsWith('admin') ? 'Admin User' : 'Client User',
       senderAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`
     };
-    await this.mutate(s => ({ 
-      ...s, 
+    await this.mutate(s => ({
+      ...s,
       messages: [...s.messages, msg],
       lastMessage: text,
       lastMessageTs: msg.ts,
@@ -431,4 +463,12 @@ export class ChatEntity extends IndexedEntity<ChatBoardState> {
     }));
     return msg;
   }
+}
+export class UserEntity extends IndexedEntity<UserState> {
+  static readonly entityName = "user";
+  static readonly indexName = "users";
+  static readonly initialState: UserState = {
+    id: "", name: "", email: "", role: "client", passwordHash: ""
+  };
+  static seedData = SEED_USERS;
 }

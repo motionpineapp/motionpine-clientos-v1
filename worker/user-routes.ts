@@ -7,10 +7,31 @@ import {
   SubscriptionEntity,
   TeamMemberEntity,
   PineTransactionEntity,
-  ChatEntity
+  ChatEntity,
+  UserEntity,
+  hashPassword
 } from "./entities";
 import { ok, bad, notFound, isStr } from './core-utils';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
+  // --- AUTH ---
+  app.post('/api/auth/login', async (c) => {
+    const { email, password } = await c.req.json();
+    if (!email || !password) return bad(c, 'Email and password required');
+    // Ensure users are seeded
+    await UserEntity.ensureSeed(c.env);
+    // In a real app with many users, we'd use an index.
+    // For this demo with < 10 users, listing all is fine.
+    const { items } = await UserEntity.list(c.env);
+    const user = items.find(u => u.email === email);
+    if (!user) return c.json({ success: false, error: 'Invalid credentials' }, 401);
+    const inputHash = await hashPassword(password);
+    if (inputHash !== user.passwordHash) {
+      return c.json({ success: false, error: 'Invalid credentials' }, 401);
+    }
+    // Return user without password hash
+    const { passwordHash, ...safeUser } = user;
+    return ok(c, safeUser);
+  });
   // --- CLIENTS ---
   app.get('/api/clients', async (c) => {
     await ClientEntity.ensureSeed(c.env);
