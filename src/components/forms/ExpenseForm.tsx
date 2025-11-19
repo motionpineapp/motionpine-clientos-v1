@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -45,7 +45,7 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
       category: 'office',
     },
   });
-  async function onSubmit(values: ExpenseFormValues) {
+  const onSubmit = useCallback(async (values: ExpenseFormValues) => {
     setIsSubmitting(true);
     try {
       await expenseService.addExpense({
@@ -64,7 +64,7 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  }, [form, onSuccess]);
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

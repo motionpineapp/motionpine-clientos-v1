@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Wallet, ArrowUpRight, ArrowDownLeft, Loader2, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';interface SeparatorProps {children?: React.ReactNode;className?: string;style?: React.CSSProperties;[key: string]: unknown;}
+import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 export function WalletPage() {
   const user = useAuthStore((s) => s.user);
   const [transactions, setTransactions] = useState<PineTransaction[]>([]);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -43,7 +43,7 @@ export function TeamMemberForm({ onSuccess }: TeamMemberFormProps) {
       phone: '',
     },
   });
-  async function onSubmit(values: TeamMemberFormValues) {
+  const onSubmit = useCallback(async (values: TeamMemberFormValues) => {
     setIsSubmitting(true);
     try {
       await teamService.createTeamMember({
@@ -62,7 +62,7 @@ export function TeamMemberForm({ onSuccess }: TeamMemberFormProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  }, [form, onSuccess]);
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

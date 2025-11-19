@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -76,7 +76,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
       });
     }
   }, [project, form]);
-  async function onSubmit(values: ProjectFormValues) {
+  const onSubmit = useCallback(async (values: ProjectFormValues) => {
     setIsSubmitting(true);
     try {
       const selectedClient = clients.find(c => c.id === values.clientId);
@@ -114,7 +114,7 @@ export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  }, [project, clients, form, onSuccess]);
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

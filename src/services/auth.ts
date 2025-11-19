@@ -22,32 +22,41 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  login: async (email: string, _password?: string) => {
+  login: async (email: string, password?: string) => {
     set({ isLoading: true });
-    await delay(800); // Simulate network request
-    // Determine role based on email content for demo purposes
-    // In a real app, this would come from the backend response
-    const role: UserRole = email.toLowerCase().includes('admin') ? 'admin' : 'client';
-    // CRITICAL: These IDs match the seed data in worker/entities.ts
-    // t1 = Sarah Jenkins (Admin/Team)
-    // c1 = Alice Freeman (Client)
-    const mockUser: User = {
-      id: role === 'admin' ? 't1' : 'c1',
-      name: role === 'admin' ? 'Sarah Jenkins' : 'Alice Freeman',
-      email: email,
-      role,
-      company: role === 'client' ? 'Acme Corp' : 'MotionPine Agency',
-      avatar: role === 'admin'
-        ? 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah'
-        : 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice',
-    };
-    // Persist to localStorage for demo purposes
-    localStorage.setItem('motionpine_user', JSON.stringify(mockUser));
-    set({
-      isAuthenticated: true,
-      user: mockUser,
-      isLoading: false
-    });
+    try {
+      // In a real app, you'd use a proper API client.
+      // For this project, we use fetch directly.
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        // The backend should return a meaningful error message
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+
+      const user: User = await response.json();
+
+      // Persist to localStorage for session management
+      localStorage.setItem('motionpine_user', JSON.stringify(user));
+
+      set({
+        isAuthenticated: true,
+        user: user,
+        isLoading: false
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+      set({ isLoading: false });
+      // Re-throw the error so the UI component can handle it (e.g., show a toast)
+      throw error;
+    }
   },
   logout: () => {
     localStorage.removeItem('motionpine_user');

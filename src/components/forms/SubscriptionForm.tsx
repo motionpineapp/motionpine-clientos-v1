@@ -43,7 +43,7 @@ export function SubscriptionForm({ onSuccess }: SubscriptionFormProps) {
       nextBillingDate: new Date().toISOString().split('T')[0],
     },
   });
-  async function onSubmit(values: SubscriptionFormValues) {
+  const onSubmit = React.useCallback(async (values: SubscriptionFormValues) => {
     setIsSubmitting(true);
     try {
       await expenseService.addSubscription({
@@ -62,7 +62,7 @@ export function SubscriptionForm({ onSuccess }: SubscriptionFormProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  }, [form, onSuccess]);
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
