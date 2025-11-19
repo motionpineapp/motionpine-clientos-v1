@@ -1,17 +1,16 @@
 import React from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  MessageSquare,
-  FolderKanban,
-  CreditCard,
-  Users,
-  Settings,
+import { 
+  LayoutDashboard, 
+  MessageSquare, 
+  FolderKanban, 
+  CreditCard, 
+  Users, 
+  Settings, 
   LogOut,
   FileText,
-  Menu,
   Wallet,
-  Loader2
+  Menu
 } from 'lucide-react';
 import { useAuthStore } from '@/services/auth';
 import {
@@ -34,23 +33,15 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
   const user = useAuthStore(s => s.user);
   const logout = useAuthStore(s => s.logout);
-  // Guard against rendering the layout without a user, which can cause hook errors.
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const navigate = useNavigate();
+  const location = useLocation();
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
-  const isAdmin = user.role === 'admin';
+  const isAdmin = user?.role === 'admin';
   const adminLinks = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
     { icon: Users, label: 'Clients', href: '/admin/clients' },
@@ -65,7 +56,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { icon: FolderKanban, label: 'Projects', href: '/client/projects' },
     { icon: MessageSquare, label: 'Chat', href: '/client/chat' },
     { icon: FileText, label: 'Intake', href: '/client/intake' },
-    { icon: Wallet, label: 'Wallet', href: '/client/wallet' },
     { icon: Settings, label: 'Settings', href: '/client/settings' },
   ];
   const links = isAdmin ? adminLinks : clientLinks;
@@ -88,14 +78,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               const isActive = location.pathname === link.href;
               return (
                 <SidebarMenuItem key={link.href}>
-                  <SidebarMenuButton
-                    asChild
+                  <SidebarMenuButton 
+                    asChild 
                     isActive={isActive}
                     tooltip={link.label}
                     className={cn(
                       "h-10 transition-all duration-200 rounded-xl",
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:text-primary-foreground"
+                      isActive 
+                        ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:text-primary-foreground" 
                         : "text-muted-foreground hover:bg-gray-100 hover:text-foreground"
                     )}
                   >
@@ -112,21 +102,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <SidebarFooter className="p-4 border-t border-gray-50/50">
           <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
             <Avatar className="h-9 w-9 border border-gray-200">
-              <AvatarImage src={user.avatar} />
-              <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
+              <AvatarImage src={user?.avatar} />
+              <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
-              <span className="text-sm font-medium truncate">{user.name}</span>
-              <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+              <span className="text-sm font-medium truncate">{user?.name}</span>
+              <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
+          <Button 
+            variant="ghost" 
+            size="sm" 
             className="mt-2 w-full justify-start text-muted-foreground hover:text-destructive group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
             onClick={handleLogout}
           >
-            <LogOut className="mr-2 h-4 w-4 group-data-[collapsible=icon]:mr-0" />
+            <LogOut className="size-4 mr-2 group-data-[collapsible=icon]:mr-0" />
             <span className="group-data-[collapsible=icon]:hidden">Logout</span>
           </Button>
         </SidebarFooter>

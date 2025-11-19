@@ -1,37 +1,45 @@
 import { create } from 'zustand';
-import { User as SharedUser } from '@shared/types';
-import { api } from '@/lib/api-client';
-export type User = SharedUser;
+export type UserRole = 'admin' | 'client';
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar?: string;
+  company?: string;
+}
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<User>;
+  login: (email: string, role: UserRole) => Promise<void>;
   logout: () => void;
   checkSession: () => Promise<void>;
 }
+// Mock delay helper
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
-  isLoading: true,
-  login: async (email, password) => {
+  isLoading: false,
+  login: async (email: string, role: UserRole) => {
     set({ isLoading: true });
-    try {
-      const user = await api<User>('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
-      localStorage.setItem('motionpine_user', JSON.stringify(user));
-      set({
-        isAuthenticated: true,
-        user: user,
-        isLoading: false
-      });
-      return user;
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
-    }
+    await delay(800); // Simulate network request
+    const mockUser: User = {
+      id: role === 'admin' ? 'admin-1' : 'client-1',
+      name: role === 'admin' ? 'Admin User' : 'Client User',
+      email,
+      role,
+      company: role === 'client' ? 'Acme Corp' : 'MotionPine Agency',
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+    };
+    // Persist to localStorage for demo purposes
+    localStorage.setItem('motionpine_user', JSON.stringify(mockUser));
+    set({ 
+      isAuthenticated: true, 
+      user: mockUser,
+      isLoading: false 
+    });
   },
   logout: () => {
     localStorage.removeItem('motionpine_user');
@@ -39,37 +47,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   checkSession: async () => {
     set({ isLoading: true });
-    try {
-      // Guard for non-browser environments (SSR)
-      if (typeof window === 'undefined' || !window.localStorage) {
-        set({ user: null, isAuthenticated: false });
-        return;
+    // Simulate session check
+    await delay(400);
+    const stored = localStorage.getItem('motionpine_user');
+    if (stored) {
+      try {
+        const user = JSON.parse(stored);
+        set({ user, isAuthenticated: true });
+      } catch (e) {
+        console.error('Failed to parse session', e);
+        localStorage.removeItem('motionpine_user');
       }
-
-      const stored = localStorage.getItem('motionpine_user');
-      if (stored) {
-        try {
-          const user = JSON.parse(stored);
-          set({ user, isAuthenticated: true });
-        } catch (e) {
-          console.error('Failed to parse session', e);
-          try {
-            localStorage.removeItem('motionpine_user');
-          } catch (removeErr) {
-            // swallow localStorage removal errors
-            console.error('Failed to remove invalid session from localStorage', removeErr);
-          }
-          set({ user: null, isAuthenticated: false });
-        }
-      } else {
-        set({ user: null, isAuthenticated: false });
-      }
-    } catch (e) {
-      // Swallow and log any unexpected errors to ensure this function never throws
-      console.error('checkSession error', e);
-      set({ user: null, isAuthenticated: false });
-    } finally {
-      set({ isLoading: false });
     }
+    set({ isLoading: false });
   }
 }));
