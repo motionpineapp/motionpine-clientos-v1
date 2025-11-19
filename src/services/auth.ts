@@ -25,20 +25,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email: string, role: UserRole) => {
     set({ isLoading: true });
     await delay(800); // Simulate network request
+    // CRITICAL: These IDs match the seed data in worker/entities.ts
+    // t1 = Sarah Jenkins (Admin/Team)
+    // c1 = Alice Freeman (Client)
     const mockUser: User = {
-      id: role === 'admin' ? 'admin-1' : 'client-1',
-      name: role === 'admin' ? 'Admin User' : 'Client User',
-      email,
+      id: role === 'admin' ? 't1' : 'c1',
+      name: role === 'admin' ? 'Sarah Jenkins' : 'Alice Freeman',
+      email: role === 'admin' ? 'sarah@motionpine.com' : 'alice@acme.com',
       role,
       company: role === 'client' ? 'Acme Corp' : 'MotionPine Agency',
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+      avatar: role === 'admin' 
+        ? 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' 
+        : 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice',
     };
     // Persist to localStorage for demo purposes
     localStorage.setItem('motionpine_user', JSON.stringify(mockUser));
-    set({ 
-      isAuthenticated: true, 
+    set({
+      isAuthenticated: true,
       user: mockUser,
-      isLoading: false 
+      isLoading: false
     });
   },
   logout: () => {

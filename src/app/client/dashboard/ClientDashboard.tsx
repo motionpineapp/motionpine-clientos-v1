@@ -1,34 +1,72 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BentoTile } from '@/components/tiles/BentoTile';
-import { 
-  FileText, 
-  Wallet, 
-  MessageSquare, 
-  File, 
-  Clock, 
+import {
+  FileText,
+  Wallet,
+  MessageSquare,
+  File,
+  Clock,
   CheckCircle2,
   HardDrive,
   Image as ImageIcon,
-  Send
+  Send,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuthStore } from '@/services/auth';
+import { projectService } from '@/services/projects';
+import { pineService } from '@/services/pines';
+import { Project } from '@shared/types';
 export function ClientDashboard() {
+  const user = useAuthStore(s => s.user);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [pinesBalance, setPinesBalance] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user) return;
+      try {
+        const [projectsData, balanceData] = await Promise.all([
+          projectService.getProjectsByClient(user.id),
+          pineService.getBalance(user.id)
+        ]);
+        setProjects(projectsData);
+        setPinesBalance(balanceData);
+      } catch (error) {
+        console.error('Failed to load client dashboard', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [user]);
+  const activeProject = projects.find(p => p.status === 'in-progress') || projects[0];
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Welcome back, Client</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Welcome back, {user?.name.split(' ')[0]}</h1>
           <p className="text-muted-foreground mt-1">Here's what's happening with your projects.</p>
         </div>
       </div>
       <div className="bento-grid">
         {/* --- TOP ROW --- */}
         {/* Project Intake Tile (Large) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-4 lg:col-span-8 min-h-[220px] bg-gradient-to-r from-primary to-gray-900 text-white border-none"
           title="Start a New Project"
           icon={<FileText className="size-5 text-white" />}
@@ -38,7 +76,7 @@ export function ClientDashboard() {
               <p className="text-gray-300 text-lg">
                 Ready to launch your next campaign? Fill out the intake form to get started immediately.
               </p>
-              <Button size="lg" className="bg-white text-primary hover:bg-gray-100 border-none font-semibold">
+              <Button size="lg" className="bg-white text-primary hover:bg-gray-100 border-none font-semibold" onClick={() => window.location.href = '/client/intake'}>
                 Create Request
               </Button>
             </div>
@@ -48,7 +86,7 @@ export function ClientDashboard() {
           </div>
         </BentoTile>
         {/* Pines / Credit Counter Tile (Medium) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-4 min-h-[220px]"
           title="Wallet"
           icon={<Wallet className="size-5" />}
@@ -56,7 +94,7 @@ export function ClientDashboard() {
           <div className="flex flex-col justify-between h-full py-2">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Available Pines</p>
-              <h2 className="text-5xl font-bold tracking-tighter text-primary">2,450</h2>
+              <h2 className="text-5xl font-bold tracking-tighter text-primary">{pinesBalance.toLocaleString()}</h2>
             </div>
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
@@ -69,7 +107,7 @@ export function ClientDashboard() {
         </BentoTile>
         {/* --- MIDDLE ROW --- */}
         {/* Instant Chat Tile (Large Vertical) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 min-h-[500px]"
           title="Support Chat"
           icon={<MessageSquare className="size-5" />}
@@ -78,7 +116,7 @@ export function ClientDashboard() {
           <div className="flex h-full flex-col">
             <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
               <Avatar className="h-10 w-10 border border-white shadow-sm">
-                <AvatarImage src="https://github.com/shadcn.png" />
+                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" />
                 <AvatarFallback>AD</AvatarFallback>
               </Avatar>
               <div>
@@ -117,7 +155,7 @@ export function ClientDashboard() {
           </div>
         </BentoTile>
         {/* Docs Tile (Small) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[240px]"
           title="Documents"
           icon={<File className="size-5" />}
@@ -145,44 +183,55 @@ export function ClientDashboard() {
           </div>
         </BentoTile>
         {/* Current Project Status Tile (Large) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-6 min-h-[240px]"
-          title="Active Project: Website Redesign"
+          title={activeProject ? `Active: ${activeProject.title}` : "No Active Projects"}
           icon={<Clock className="size-5" />}
         >
-          <div className="flex flex-col justify-between h-full gap-6">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-medium">Progress</span>
-                <span className="text-muted-foreground">75%</span>
+          {activeProject ? (
+            <div className="flex flex-col justify-between h-full gap-6">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="font-medium">Progress</span>
+                  <span className="text-muted-foreground">
+                    {activeProject.status === 'done' ? '100%' : activeProject.status === 'in-progress' ? '65%' : '10%'}
+                  </span>
+                </div>
+                <Progress 
+                  value={activeProject.status === 'done' ? 100 : activeProject.status === 'in-progress' ? 65 : 10} 
+                  className="h-3" 
+                />
               </div>
-              <Progress value={75} className="h-3" />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col items-center text-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                    <CheckCircle2 className="size-4" />
+                  </div>
+                  <span className="text-xs font-medium">Discovery</span>
+                </div>
+                <div className="flex flex-col items-center text-center gap-2">
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center ${activeProject.status === 'todo' ? 'bg-gray-100 text-gray-400' : 'bg-green-100 text-green-600'}`}>
+                    <CheckCircle2 className="size-4" />
+                  </div>
+                  <span className="text-xs font-medium">Design</span>
+                </div>
+                <div className="flex flex-col items-center text-center gap-2">
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center ${activeProject.status === 'in-progress' ? 'bg-blue-100 text-blue-600 animate-pulse' : activeProject.status === 'done' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                    <Clock className="size-4" />
+                  </div>
+                  <span className="text-xs font-medium text-blue-600">Development</span>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex flex-col items-center text-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                  <CheckCircle2 className="size-4" />
-                </div>
-                <span className="text-xs font-medium">Discovery</span>
-              </div>
-              <div className="flex flex-col items-center text-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                  <CheckCircle2 className="size-4" />
-                </div>
-                <span className="text-xs font-medium">Design</span>
-              </div>
-              <div className="flex flex-col items-center text-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 animate-pulse">
-                  <Clock className="size-4" />
-                </div>
-                <span className="text-xs font-medium text-blue-600">Development</span>
-              </div>
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <p>Start a new project to see status here.</p>
             </div>
-          </div>
+          )}
         </BentoTile>
         {/* --- LOWER ROW --- */}
         {/* Frame.io Tile */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[160px]"
           noPadding
         >
@@ -194,7 +243,7 @@ export function ClientDashboard() {
           </div>
         </BentoTile>
         {/* Google Drive Tile */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
           noPadding
         >
@@ -206,7 +255,7 @@ export function ClientDashboard() {
           </div>
         </BentoTile>
         {/* Dropbox Tile */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
           noPadding
         >

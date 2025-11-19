@@ -1,25 +1,73 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BentoTile } from '@/components/tiles/BentoTile';
-import { 
-  Users, 
-  FolderKanban, 
-  FileText, 
-  MessageSquare, 
-  DollarSign, 
-  ArrowUpRight, 
-  HardDrive, 
-  Image as ImageIcon, 
+import {
+  Users,
+  FolderKanban,
+  FileText,
+  MessageSquare,
+  DollarSign,
+  ArrowUpRight,
+  HardDrive,
+  Image as ImageIcon,
   MoreHorizontal,
-  Send
+  Send,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { clientService } from '@/services/clients';
+import { projectService } from '@/services/projects';
+import { chatService } from '@/services/chat';
+import { Client, Project, Chat } from '@shared/types';
 export function AdminDashboard() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [clientsData, projectsData, chatsData] = await Promise.all([
+          clientService.getClients(),
+          projectService.getProjects(),
+          chatService.getChats()
+        ]);
+        setClients(clientsData);
+        setProjects(projectsData);
+        setChats(chatsData);
+      } catch (error) {
+        console.error('Failed to load dashboard data', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+  // Derived Stats
+  const totalClients = clients.length;
+  const activeProjectsCount = projects.filter(p => p.status === 'in-progress').length;
+  const pendingIntakeCount = projects.filter(p => p.status === 'todo').length;
+  const unreadCount = chats.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+  const totalRevenue = clients.reduce((acc, c) => acc + c.totalRevenue, 0);
+  // Lists
+  const intakeRequests = projects.filter(p => p.status === 'todo').slice(0, 2);
+  const recentClients = clients.slice(0, 4);
+  const extraClients = Math.max(0, clients.length - 4);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Dashboard</h1>
@@ -32,7 +80,7 @@ export function AdminDashboard() {
       <div className="bento-grid">
         {/* --- TOP ROW --- */}
         {/* Admin Overview Tile (Large) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-4 lg:col-span-6 min-h-[200px]"
           title="Overview"
           icon={<Users className="size-5" />}
@@ -40,24 +88,24 @@ export function AdminDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-full items-center">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Total Clients</p>
-              <p className="text-3xl font-bold">24</p>
+              <p className="text-3xl font-bold">{totalClients}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Active Projects</p>
-              <p className="text-3xl font-bold text-primary">12</p>
+              <p className="text-3xl font-bold text-primary">{activeProjectsCount}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Pending Intake</p>
-              <p className="text-3xl font-bold text-orange-500">3</p>
+              <p className="text-3xl font-bold text-orange-500">{pendingIntakeCount}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Unread Msgs</p>
-              <p className="text-3xl font-bold text-blue-500">8</p>
+              <p className="text-3xl font-bold text-blue-500">{unreadCount}</p>
             </div>
           </div>
         </BentoTile>
         {/* Revenue Summary Tile (Medium) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[200px] bg-gradient-to-br from-gray-900 to-gray-800 text-white border-none"
           noPadding
         >
@@ -71,48 +119,42 @@ export function AdminDashboard() {
               </Badge>
             </div>
             <div>
-              <p className="text-gray-400 text-sm font-medium">Monthly Revenue</p>
-              <h3 className="text-3xl font-bold mt-1">$42,500</h3>
+              <p className="text-gray-400 text-sm font-medium">Total Revenue</p>
+              <h3 className="text-3xl font-bold mt-1">${totalRevenue.toLocaleString()}</h3>
             </div>
           </div>
         </BentoTile>
         {/* New Intake Requests Tile (Medium) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[200px]"
           title="Intake Requests"
           icon={<FileText className="size-5" />}
           action={<Button variant="ghost" size="icon" className="h-8 w-8"><ArrowUpRight className="size-4" /></Button>}
         >
           <div className="flex flex-col justify-center h-full space-y-4">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">
-                  AC
+            {intakeRequests.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center">No pending requests</p>
+            ) : (
+              intakeRequests.map(project => (
+                <div key={project.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">
+                      {project.clientName.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div className="overflow-hidden">
+                      <p className="text-sm font-medium truncate max-w-[120px]">{project.clientName}</p>
+                      <p className="text-xs text-muted-foreground truncate max-w-[120px]">{project.title}</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-xs">New</Badge>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Acme Corp</p>
-                  <p className="text-xs text-muted-foreground">Web Redesign</p>
-                </div>
-              </div>
-              <Badge variant="outline" className="text-xs">New</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-                  TS
-                </div>
-                <div>
-                  <p className="text-sm font-medium">TechStart</p>
-                  <p className="text-xs text-muted-foreground">Brand Identity</p>
-                </div>
-              </div>
-              <Badge variant="outline" className="text-xs">New</Badge>
-            </div>
+              ))
+            )}
           </div>
         </BentoTile>
         {/* --- MIDDLE ROW --- */}
         {/* Instant Chat Panel (Large Vertical) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 min-h-[500px]"
           title="Instant Chat"
           icon={<MessageSquare className="size-5" />}
@@ -122,13 +164,15 @@ export function AdminDashboard() {
             <div className="flex-1 flex overflow-hidden">
               {/* Mini Sidebar for Chat */}
               <div className="w-20 border-r border-gray-100 flex flex-col items-center py-4 gap-4 bg-gray-50/50">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="relative group cursor-pointer">
+                {chats.slice(0, 5).map((chat) => (
+                  <div key={chat.id} className="relative group cursor-pointer">
                     <Avatar className="h-10 w-10 border-2 border-white shadow-sm hover:scale-105 transition-transform">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`} />
-                      <AvatarFallback>C{i}</AvatarFallback>
+                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${chat.title}`} />
+                      <AvatarFallback>{chat.title.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    {i === 1 && <span className="absolute top-0 right-0 h-3 w-3 bg-green-500 border-2 border-white rounded-full" />}
+                    {chat.unreadCount ? (
+                      <span className="absolute top-0 right-0 h-3 w-3 bg-green-500 border-2 border-white rounded-full" />
+                    ) : null}
                   </div>
                 ))}
                 <div className="mt-auto">
@@ -137,14 +181,14 @@ export function AdminDashboard() {
                   </Button>
                 </div>
               </div>
-              {/* Chat Area */}
+              {/* Chat Area Mock */}
               <div className="flex-1 flex flex-col bg-white">
                 <ScrollArea className="flex-1 p-4">
                   <div className="space-y-4">
                     <div className="flex gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=1" />
-                        <AvatarFallback>C1</AvatarFallback>
+                        <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alice" />
+                        <AvatarFallback>AF</AvatarFallback>
                       </Avatar>
                       <div className="bg-gray-100 p-3 rounded-2xl rounded-tl-none text-sm max-w-[80%]">
                         Hey! Just checking on the status of the homepage design?
@@ -153,15 +197,6 @@ export function AdminDashboard() {
                     <div className="flex gap-3 flex-row-reverse">
                       <div className="bg-primary text-white p-3 rounded-2xl rounded-tr-none text-sm max-w-[80%]">
                         Hi! We're wrapping up the final touches. Sending a preview in 10 mins.
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=1" />
-                        <AvatarFallback>C1</AvatarFallback>
-                      </Avatar>
-                      <div className="bg-gray-100 p-3 rounded-2xl rounded-tl-none text-sm max-w-[80%]">
-                        Awesome, thanks!
                       </div>
                     </div>
                   </div>
@@ -179,28 +214,32 @@ export function AdminDashboard() {
           </div>
         </BentoTile>
         {/* Clients Tile (Small) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[240px]"
           title="Clients"
           icon={<Users className="size-5" />}
         >
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <div className="flex -space-x-4 overflow-hidden py-4">
-              {[1, 2, 3, 4].map((i) => (
-                <Avatar key={i} className="inline-block h-12 w-12 ring-2 ring-white">
-                  <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i+10}`} />
-                  <AvatarFallback>C{i}</AvatarFallback>
+              {recentClients.map((client) => (
+                <Avatar key={client.id} className="inline-block h-12 w-12 ring-2 ring-white">
+                  <AvatarImage src={client.avatar} />
+                  <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>
                 </Avatar>
               ))}
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 ring-2 ring-white text-xs font-medium text-gray-500">
-                +18
-              </div>
+              {extraClients > 0 && (
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 ring-2 ring-white text-xs font-medium text-gray-500">
+                  +{extraClients}
+                </div>
+              )}
             </div>
-            <Button variant="outline" className="w-full mt-auto">View Directory</Button>
+            <Button variant="outline" className="w-full mt-auto" onClick={() => window.location.href = '/admin/clients'}>
+              View Directory
+            </Button>
           </div>
         </BentoTile>
         {/* Projects Summary Tile (Large) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-6 min-h-[240px]"
           title="Active Projects"
           icon={<FolderKanban className="size-5" />}
@@ -211,27 +250,33 @@ export function AdminDashboard() {
                 <div className="h-2 w-2 rounded-full bg-gray-400" />
                 <span className="text-xs font-medium uppercase tracking-wider">To Do</span>
               </div>
-              <span className="text-3xl font-bold text-gray-900">5</span>
+              <span className="text-3xl font-bold text-gray-900">
+                {projects.filter(p => p.status === 'todo').length}
+              </span>
             </div>
             <div className="bg-blue-50 rounded-2xl p-4 flex flex-col justify-between border border-blue-100">
               <div className="flex items-center gap-2 text-blue-600 mb-2">
                 <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
                 <span className="text-xs font-medium uppercase tracking-wider">In Progress</span>
               </div>
-              <span className="text-3xl font-bold text-blue-900">12</span>
+              <span className="text-3xl font-bold text-blue-900">
+                {projects.filter(p => p.status === 'in-progress').length}
+              </span>
             </div>
             <div className="bg-green-50 rounded-2xl p-4 flex flex-col justify-between border border-green-100">
               <div className="flex items-center gap-2 text-green-600 mb-2">
                 <div className="h-2 w-2 rounded-full bg-green-500" />
                 <span className="text-xs font-medium uppercase tracking-wider">Done</span>
               </div>
-              <span className="text-3xl font-bold text-green-900">8</span>
+              <span className="text-3xl font-bold text-green-900">
+                {projects.filter(p => p.status === 'done').length}
+              </span>
             </div>
           </div>
         </BentoTile>
         {/* --- LOWER ROW --- */}
         {/* Frame.io Tile */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[160px]"
           noPadding
         >
@@ -243,7 +288,7 @@ export function AdminDashboard() {
           </div>
         </BentoTile>
         {/* Google Drive Tile */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
           noPadding
         >
@@ -255,7 +300,7 @@ export function AdminDashboard() {
           </div>
         </BentoTile>
         {/* Dropbox Tile */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
           noPadding
         >
