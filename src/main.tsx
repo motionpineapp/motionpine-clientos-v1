@@ -18,6 +18,9 @@ import { ClientDashboard } from '@/app/client/dashboard/ClientDashboard';
 import { ClientsPage } from '@/app/admin/clients/ClientsPage';
 import { ClientDetailPage } from '@/app/admin/clients/ClientDetailPage';
 import { ProjectsPage } from '@/app/admin/projects/ProjectsPage';
+import { ChatPage } from '@/app/admin/chat/ChatPage';
+import { ExpensesPage } from '@/app/admin/expenses/ExpensesPage';
+import { TeamsPage } from '@/app/admin/teams/TeamsPage';
 import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 const router = createBrowserRouter([
@@ -41,9 +44,9 @@ const router = createBrowserRouter([
       { path: "clients", element: <ClientsPage /> },
       { path: "clients/:id", element: <ClientDetailPage /> },
       { path: "projects", element: <ProjectsPage /> },
-      { path: "chat", element: <div>Chat Module (Coming Soon)</div> },
-      { path: "expenses", element: <div>Expenses Module (Coming Soon)</div> },
-      { path: "teams", element: <div>Teams Module (Coming Soon)</div> },
+      { path: "chat", element: <ChatPage /> },
+      { path: "expenses", element: <ExpensesPage /> },
+      { path: "teams", element: <TeamsPage /> },
       { path: "settings", element: <div>Settings Module (Coming Soon)</div> },
     ]
   },
