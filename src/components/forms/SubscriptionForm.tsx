@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -43,7 +43,7 @@ export function SubscriptionForm({ onSuccess }: SubscriptionFormProps) {
       nextBillingDate: new Date().toISOString().split('T')[0],
     },
   });
-  const onSubmit = React.useCallback(async (values: SubscriptionFormValues) => {
+  const onSubmit = useCallback(async (values: SubscriptionFormValues) => {
     setIsSubmitting(true);
     try {
       await expenseService.addSubscription({
@@ -87,7 +87,12 @@ export function SubscriptionForm({ onSuccess }: SubscriptionFormProps) {
               <FormItem>
                 <FormLabel>Price ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="0.00" 
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -99,7 +104,10 @@ export function SubscriptionForm({ onSuccess }: SubscriptionFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Billing Cycle</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select 
+                  onValueChange={(value) => field.onChange(value as SubscriptionFormValues['billingCycle'])} 
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select cycle" />

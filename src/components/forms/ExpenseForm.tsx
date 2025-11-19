@@ -40,7 +40,7 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
     defaultValues: {
       item: '',
       cost: 0,
-      date: new Date().toISOString().split('T')[0], // Default to today
+      date: new Date().toISOString().split('T')[0],
       assignedTo: '',
       category: 'office',
     },
@@ -89,7 +89,12 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
               <FormItem>
                 <FormLabel>Cost ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="0.00" 
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -116,7 +121,10 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select 
+                  onValueChange={(value) => field.onChange(value as ExpenseFormValues['category'])} 
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
