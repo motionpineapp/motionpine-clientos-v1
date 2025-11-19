@@ -7,12 +7,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Plus, Download, Filter, Loader2, CreditCard, Server } from 'lucide-react';
 import { toast } from 'sonner';
+import { ExpenseForm } from '@/components/forms/ExpenseForm';
 export function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   useEffect(() => {
     loadData();
   }, []);
@@ -31,6 +41,10 @@ export function ExpensesPage() {
       setIsLoading(false);
     }
   };
+  const handleCreateSuccess = () => {
+    setIsCreateOpen(false);
+    loadData();
+  };
   const totalExpenses = expenses.reduce((acc, curr) => acc + curr.cost, 0);
   const monthlyRecurring = subscriptions
     .filter(s => s.status === 'active')
@@ -41,10 +55,23 @@ export function ExpensesPage() {
         title="Expenses & Infrastructure"
         description="Track office spending and recurring software subscriptions."
       >
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Expense
-        </Button>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Expense
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Log New Expense</DialogTitle>
+              <DialogDescription>
+                Record a one-time purchase for the agency.
+              </DialogDescription>
+            </DialogHeader>
+            <ExpenseForm onSuccess={handleCreateSuccess} />
+          </DialogContent>
+        </Dialog>
       </PageHeader>
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

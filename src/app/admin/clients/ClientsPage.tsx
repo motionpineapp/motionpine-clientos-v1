@@ -1,35 +1,45 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { PageHeader } from '@/components/PageHeader';
 import { clientService } from '@/services/clients';
 import { Client } from '@shared/types';
 import { Search, MoreHorizontal, Plus, Filter, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ClientForm } from '@/components/forms/ClientForm';
 export function ClientsPage() {
   const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   useEffect(() => {
     loadClients();
   }, []);
@@ -45,7 +55,11 @@ export function ClientsPage() {
       setIsLoading(false);
     }
   };
-  const filteredClients = clients.filter(client => 
+  const handleCreateSuccess = () => {
+    setIsCreateOpen(false);
+    loadClients();
+  };
+  const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     client.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
     client.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -60,21 +74,34 @@ export function ClientsPage() {
   };
   return (
     <div className="space-y-6 animate-fade-in">
-      <PageHeader 
-        title="Clients" 
+      <PageHeader
+        title="Clients"
         description="Manage your client relationships and accounts."
       >
-        <Button onClick={() => toast.info('Create Client Modal would open here')}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Client
-        </Button>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Client
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Add New Client</DialogTitle>
+              <DialogDescription>
+                Enter the details of the new client below.
+              </DialogDescription>
+            </DialogHeader>
+            <ClientForm onSuccess={handleCreateSuccess} />
+          </DialogContent>
+        </Dialog>
       </PageHeader>
       {/* Filters & Search */}
       <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search clients..." 
+          <Input
+            placeholder="Search clients..."
             className="pl-10 bg-gray-50 border-gray-200 focus-visible:ring-primary"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -116,8 +143,8 @@ export function ClientsPage() {
               </TableRow>
             ) : (
               filteredClients.map((client) => (
-                <TableRow 
-                  key={client.id} 
+                <TableRow
+                  key={client.id}
                   className="cursor-pointer hover:bg-gray-50/50 transition-colors"
                   onClick={() => navigate(`/admin/clients/${client.id}`)}
                 >

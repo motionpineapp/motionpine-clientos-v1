@@ -1,46 +1,99 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, Calendar as CalendarIcon } from 'lucide-react';
-import { Client, ProjectStatus } from '@shared/types';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-const projectSchema = z.object({
-  title: z.string().min(3, { message: "Title must be at least 3 characters." }),
-  clientId: z.string().min(1, { message: "Please select a client." }),
-  status: z.enum(['todo', 'in-progress', 'done']),
-  priority: z.enum(['low', 'medium', 'high']).optional(),
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { projectService } from '@/services/projects';
+import { clientService } from '@/services/clients';
+import { Client } from '@shared/types';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+const projectFormSchema = z.object({
+  title: z.string().min(2, 'Title must be at least 2 characters'),
+  clientId: z.string().min(1, 'Please select a client'),
   description: z.string().optional(),
-  dueDate: z.date().optional(),
+  priority: z.enum(['low', 'medium', 'high']),
+  dueDate: z.string().optional(),
 });
-type ProjectFormValues = z.infer<typeof projectSchema>;
+type ProjectFormValues = z.infer<typeof projectFormSchema>;
 interface ProjectFormProps {
-  clients: Client[];
-  onSubmit: (data: ProjectFormValues) => void;
-  isSubmitting: boolean;
-  defaultValues?: Partial<ProjectFormValues>;
+  onSuccess: () => void;
 }
-export function ProjectForm({ clients, onSubmit, isSubmitting, defaultValues }: ProjectFormProps) {
+export function ProjectForm({ onSuccess }: ProjectFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [isLoadingClients, setIsLoadingClients] = useState(true);
   const form = useForm<ProjectFormValues>({
-    resolver: zodResolver(projectSchema),
-    defaultValues: defaultValues || {
-      title: "",
-      clientId: "",
-      status: "todo",
-      priority: "medium",
+    resolver: zodResolver(projectFormSchema),
+    defaultValues: {
+      title: '',
+      clientId: '',
+      description: '',
+      priority: 'medium',
+      dueDate: '',
     },
   });
+  useEffect(() => {
+    const loadClients = async () => {
+      try {
+        const data = await clientService.getClients();
+        setClients(data);
+      } catch (error) {
+        console.error('Failed to load clients:', error);
+        toast.error('Failed to load clients list');
+      } finally {
+        setIsLoadingClients(false);
+      }
+    };
+    loadClients();
+  }, []);
+  async function onSubmit(values: ProjectFormValues) {
+    setIsSubmitting(true);
+    try {
+      const selectedClient = clients.find(c => c.id === values.clientId);
+      if (!selectedClient) {
+        toast.error('Selected client not found');
+        return;
+      }
+      await projectService.createProject({
+        title: values.title,
+        clientId: values.clientId,
+        clientName: selectedClient.name,
+        description: values.description || undefined,
+        priority: values.priority,
+        dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : undefined,
+        status: 'todo',
+      });
+      toast.success('Project created successfully');
+      form.reset();
+      onSuccess();
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      toast.error('Failed to create project. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="title"
@@ -48,7 +101,7 @@ export function ProjectForm({ clients, onSubmit, isSubmitting, defaultValues }: 
             <FormItem>
               <FormLabel>Project Title</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Q4 Marketing Campaign" {...field} />
+                <Input placeholder="e.g. Website Redesign" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -60,14 +113,14 @@ export function ProjectForm({ clients, onSubmit, isSubmitting, defaultValues }: 
           render={({ field }) => (
             <FormItem>
               <FormLabel>Client</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClients}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a client" />
+                    <SelectValue placeholder={isLoadingClients ? "Loading clients..." : "Select a client"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {clients.map(client => (
+                  {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.name} ({client.company})
                     </SelectItem>
@@ -78,36 +131,23 @@ export function ProjectForm({ clients, onSubmit, isSubmitting, defaultValues }: 
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Briefly describe the project goals..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="status"
+            name="priority"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Status</FormLabel>
+                <FormLabel>Priority</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="todo">To Do</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="done">Done</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -118,51 +158,39 @@ export function ProjectForm({ clients, onSubmit, isSubmitting, defaultValues }: 
             control={form.control}
             name="dueDate"
             render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Due Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+              <FormItem>
+                <FormLabel>Due Date (Optional)</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating Project...
-            </>
-          ) : (
-            'Create Project'
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description (Optional)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Brief description of the project..."
+                  className="resize-none"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </Button>
+        />
+        <div className="flex justify-end pt-2">
+          <Button type="submit" disabled={isSubmitting || isLoadingClients}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Create Project
+          </Button>
+        </div>
       </form>
     </Form>
   );
