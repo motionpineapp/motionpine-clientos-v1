@@ -12,7 +12,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, role: UserRole) => Promise<void>;
+  login: (email: string, password?: string) => Promise<void>;
   logout: () => void;
   checkSession: () => Promise<void>;
 }
@@ -22,20 +22,23 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  login: async (email: string, role: UserRole) => {
+  login: async (email: string, _password?: string) => {
     set({ isLoading: true });
     await delay(800); // Simulate network request
+    // Determine role based on email content for demo purposes
+    // In a real app, this would come from the backend response
+    const role: UserRole = email.toLowerCase().includes('admin') ? 'admin' : 'client';
     // CRITICAL: These IDs match the seed data in worker/entities.ts
     // t1 = Sarah Jenkins (Admin/Team)
     // c1 = Alice Freeman (Client)
     const mockUser: User = {
       id: role === 'admin' ? 't1' : 'c1',
       name: role === 'admin' ? 'Sarah Jenkins' : 'Alice Freeman',
-      email: role === 'admin' ? 'sarah@motionpine.com' : 'alice@acme.com',
+      email: email,
       role,
       company: role === 'client' ? 'Acme Corp' : 'MotionPine Agency',
-      avatar: role === 'admin' 
-        ? 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' 
+      avatar: role === 'admin'
+        ? 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah'
         : 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice',
     };
     // Persist to localStorage for demo purposes
