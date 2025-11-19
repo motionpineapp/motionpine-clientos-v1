@@ -18,6 +18,7 @@ import { ClientDashboard } from '@/app/client/dashboard/ClientDashboard';
 import { ClientsPage } from '@/app/admin/clients/ClientsPage';
 import { ClientDetailPage } from '@/app/admin/clients/ClientDetailPage';
 import { ProjectsPage } from '@/app/admin/projects/ProjectsPage';
+import { ProjectDetailPage } from '@/app/admin/projects/ProjectDetailPage';
 import { ChatPage } from '@/app/admin/chat/ChatPage';
 import { ExpensesPage } from '@/app/admin/expenses/ExpensesPage';
 import { TeamsPage } from '@/app/admin/teams/TeamsPage';
@@ -25,6 +26,7 @@ import { SettingsPage } from '@/app/admin/settings/SettingsPage';
 import { ClientProjectsPage } from '@/app/client/projects/ClientProjectsPage';
 import { ClientChatPage } from '@/app/client/chat/ClientChatPage';
 import { IntakePage } from '@/app/client/intake/IntakePage';
+import { WalletPage } from '@/app/client/wallet/WalletPage';
 import { ClientSettingsPage } from '@/app/client/settings/ClientSettingsPage';
 import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -49,6 +51,7 @@ const router = createBrowserRouter([
       { path: "clients", element: <ClientsPage /> },
       { path: "clients/:id", element: <ClientDetailPage /> },
       { path: "projects", element: <ProjectsPage /> },
+      { path: "projects/:id", element: <ProjectDetailPage /> },
       { path: "chat", element: <ChatPage /> },
       { path: "expenses", element: <ExpensesPage /> },
       { path: "teams", element: <TeamsPage /> },
@@ -65,6 +68,7 @@ const router = createBrowserRouter([
       { path: "projects", element: <ClientProjectsPage /> },
       { path: "chat", element: <ClientChatPage /> },
       { path: "intake", element: <IntakePage /> },
+      { path: "wallet", element: <WalletPage /> },
       { path: "settings", element: <ClientSettingsPage /> },
     ]
   },

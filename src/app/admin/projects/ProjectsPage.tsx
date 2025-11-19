@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { projectService } from '@/services/projects';
 import { Project, ProjectStatus } from '@shared/types';
 import { PageHeader } from '@/components/PageHeader';
@@ -19,6 +20,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ProjectForm } from '@/components/forms/ProjectForm';
 export function ProjectsPage() {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -99,10 +101,10 @@ export function ProjectsPage() {
               {/* Column Content */}
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {projects.filter(p => p.status === col.id).map(project => (
-                  <Card
-                    key={project.id}
+                  <Card 
+                    key={project.id} 
                     className="border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                    onClick={() => toast.info(`View project: ${project.title}`)}
+                    onClick={() => navigate(`/admin/projects/${project.id}`)}
                   >
                     <CardContent className="p-4 space-y-3">
                       <div className="flex justify-between items-start">

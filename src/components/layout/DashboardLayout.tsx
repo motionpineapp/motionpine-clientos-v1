@@ -1,12 +1,12 @@
 import React from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  MessageSquare, 
-  FolderKanban, 
-  CreditCard, 
-  Users, 
-  Settings, 
+import {
+  LayoutDashboard,
+  MessageSquare,
+  FolderKanban,
+  CreditCard,
+  Users,
+  Settings,
   LogOut,
   FileText,
   Wallet,
@@ -56,6 +56,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { icon: FolderKanban, label: 'Projects', href: '/client/projects' },
     { icon: MessageSquare, label: 'Chat', href: '/client/chat' },
     { icon: FileText, label: 'Intake', href: '/client/intake' },
+    { icon: Wallet, label: 'Wallet', href: '/client/wallet' },
     { icon: Settings, label: 'Settings', href: '/client/settings' },
   ];
   const links = isAdmin ? adminLinks : clientLinks;
@@ -78,14 +79,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               const isActive = location.pathname === link.href;
               return (
                 <SidebarMenuItem key={link.href}>
-                  <SidebarMenuButton 
-                    asChild 
+                  <SidebarMenuButton
+                    asChild
                     isActive={isActive}
                     tooltip={link.label}
                     className={cn(
                       "h-10 transition-all duration-200 rounded-xl",
-                      isActive 
-                        ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:text-primary-foreground" 
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:text-primary-foreground"
                         : "text-muted-foreground hover:bg-gray-100 hover:text-foreground"
                     )}
                   >
@@ -110,9 +111,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="mt-2 w-full justify-start text-muted-foreground hover:text-destructive group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
             onClick={handleLogout}
           >

@@ -8,14 +8,24 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { ArrowLeft, Mail, Phone, MapPin, Calendar, MessageSquare, ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ClientForm } from '@/components/forms/ClientForm';
 export function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [client, setClient] = useState<Client | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const loadData = useCallback(async (clientId: string) => {
     try {
       setIsLoading(true);
@@ -42,6 +52,10 @@ export function ClientDetailPage() {
       loadData(id);
     }
   }, [id, loadData]);
+  const handleEditSuccess = () => {
+    setIsEditOpen(false);
+    if (id) loadData(id);
+  };
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -68,7 +82,20 @@ export function ClientDetailPage() {
             <MessageSquare className="mr-2 h-4 w-4" />
             Message
           </Button>
-          <Button>Edit Profile</Button>
+          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <DialogTrigger asChild>
+              <Button>Edit Profile</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Edit Client Profile</DialogTitle>
+                <DialogDescription>
+                  Update the client's information below.
+                </DialogDescription>
+              </DialogHeader>
+              <ClientForm client={client} onSuccess={handleEditSuccess} />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -128,21 +155,21 @@ export function ClientDetailPage() {
           <Card className="border-gray-100 shadow-sm h-full">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Projects</CardTitle>
-              <Button variant="ghost" size="sm" className="text-primary">View All</Button>
+              <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate('/admin/projects')}>View All</Button>
             </CardHeader>
             <CardContent>
               {projects.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground bg-gray-50 rounded-xl border border-dashed border-gray-200">
                   <p>No projects found for this client.</p>
-                  <Button variant="link" className="mt-2">Create first project</Button>
+                  <Button variant="link" className="mt-2" onClick={() => navigate('/admin/projects')}>Create first project</Button>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {projects.map(project => (
-                    <div
-                      key={project.id}
+                    <div 
+                      key={project.id} 
                       className="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-primary/20 hover:bg-gray-50/50 transition-all cursor-pointer group"
-                      onClick={() => toast.info(`Project ${project.title} clicked`)}
+                      onClick={() => navigate(`/admin/projects/${project.id}`)}
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -157,11 +184,11 @@ export function ClientDetailPage() {
                       </div>
                       <div className="flex items-center gap-4">
                         <Badge variant="outline" className={
-                          project.status === 'done' ? 'bg-green-50 text-green-700 border-green-200' :
-                          project.status === 'in-progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          project.status === 'done' ? 'bg-green-50 text-green-700 border-green-200' : 
+                          project.status === 'in-progress' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
                           'bg-gray-100 text-gray-700'
                         }>
-                          {project.status === 'in-progress' ? 'In Progress' :
+                          {project.status === 'in-progress' ? 'In Progress' : 
                            project.status.charAt(0).toUpperCase() + project.status.slice(1)}
                         </Badge>
                         <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-primary" />

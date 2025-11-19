@@ -24,6 +24,12 @@ export const clientService = {
       body: JSON.stringify(newClient)
     });
   },
+  updateClient: async (id: string, data: Partial<Client>): Promise<Client> => {
+    return api<Client>(`/api/clients/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
   updateClientStatus: async (id: string, status: ClientStatus): Promise<Client | undefined> => {
     return api<Client>(`/api/clients/${id}`, {
       method: 'PUT',

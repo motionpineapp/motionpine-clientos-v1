@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { projectService } from '@/services/projects';
 import { clientService } from '@/services/clients';
-import { Client } from '@shared/types';
+import { Client, Project } from '@shared/types';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 const projectFormSchema = z.object({
@@ -34,20 +34,21 @@ const projectFormSchema = z.object({
 });
 type ProjectFormValues = z.infer<typeof projectFormSchema>;
 interface ProjectFormProps {
+  project?: Project;
   onSuccess: () => void;
 }
-export function ProjectForm({ onSuccess }: ProjectFormProps) {
+export function ProjectForm({ project, onSuccess }: ProjectFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(true);
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
-      title: '',
-      clientId: '',
-      description: '',
-      priority: 'medium',
-      dueDate: '',
+      title: project?.title || '',
+      clientId: project?.clientId || '',
+      description: project?.description || '',
+      priority: project?.priority || 'medium',
+      dueDate: project?.dueDate ? new Date(project.dueDate).toISOString().split('T')[0] : '',
     },
   });
   useEffect(() => {
@@ -64,6 +65,17 @@ export function ProjectForm({ onSuccess }: ProjectFormProps) {
     };
     loadClients();
   }, []);
+  useEffect(() => {
+    if (project) {
+      form.reset({
+        title: project.title,
+        clientId: project.clientId,
+        description: project.description || '',
+        priority: project.priority || 'medium',
+        dueDate: project.dueDate ? new Date(project.dueDate).toISOString().split('T')[0] : '',
+      });
+    }
+  }, [project, form]);
   async function onSubmit(values: ProjectFormValues) {
     setIsSubmitting(true);
     try {
@@ -72,21 +84,33 @@ export function ProjectForm({ onSuccess }: ProjectFormProps) {
         toast.error('Selected client not found');
         return;
       }
-      await projectService.createProject({
-        title: values.title,
-        clientId: values.clientId,
-        clientName: selectedClient.name,
-        description: values.description || undefined,
-        priority: values.priority,
-        dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : undefined,
-        status: 'todo',
-      });
-      toast.success('Project created successfully');
+      if (project) {
+        await projectService.updateProject(project.id, {
+          title: values.title,
+          clientId: values.clientId,
+          clientName: selectedClient.name,
+          description: values.description || undefined,
+          priority: values.priority,
+          dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : undefined,
+        });
+        toast.success('Project updated successfully');
+      } else {
+        await projectService.createProject({
+          title: values.title,
+          clientId: values.clientId,
+          clientName: selectedClient.name,
+          description: values.description || undefined,
+          priority: values.priority,
+          dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : undefined,
+          status: 'todo',
+        });
+        toast.success('Project created successfully');
+      }
       form.reset();
       onSuccess();
     } catch (error) {
-      console.error('Failed to create project:', error);
-      toast.error('Failed to create project. Please try again.');
+      console.error('Failed to save project:', error);
+      toast.error('Failed to save project. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -113,7 +137,7 @@ export function ProjectForm({ onSuccess }: ProjectFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Client</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClients}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClients || !!project}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={isLoadingClients ? "Loading clients..." : "Select a client"} />
@@ -188,7 +212,7 @@ export function ProjectForm({ onSuccess }: ProjectFormProps) {
         <div className="flex justify-end pt-2">
           <Button type="submit" disabled={isSubmitting || isLoadingClients}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create Project
+            {project ? 'Save Changes' : 'Create Project'}
           </Button>
         </div>
       </form>

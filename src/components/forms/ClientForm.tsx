@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { clientService } from '@/services/clients';
+import { Client } from '@shared/types';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 const clientFormSchema = z.object({
@@ -24,37 +25,61 @@ const clientFormSchema = z.object({
 });
 type ClientFormValues = z.infer<typeof clientFormSchema>;
 interface ClientFormProps {
+  client?: Client;
   onSuccess: () => void;
 }
-export function ClientForm({ onSuccess }: ClientFormProps) {
+export function ClientForm({ client, onSuccess }: ClientFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientFormSchema),
     defaultValues: {
-      name: '',
-      company: '',
-      email: '',
-      phone: '',
-      address: '',
+      name: client?.name || '',
+      company: client?.company || '',
+      email: client?.email || '',
+      phone: client?.phone || '',
+      address: client?.address || '',
     },
   });
+  // Reset form when client prop changes (e.g. when opening edit modal for different client)
+  useEffect(() => {
+    if (client) {
+      form.reset({
+        name: client.name,
+        company: client.company,
+        email: client.email,
+        phone: client.phone || '',
+        address: client.address || '',
+      });
+    }
+  }, [client, form]);
   async function onSubmit(values: ClientFormValues) {
     setIsSubmitting(true);
     try {
-      await clientService.createClient({
-        name: values.name,
-        company: values.company,
-        email: values.email,
-        phone: values.phone || undefined,
-        address: values.address || undefined,
-        status: 'active',
-      });
-      toast.success('Client created successfully');
+      if (client) {
+        await clientService.updateClient(client.id, {
+          name: values.name,
+          company: values.company,
+          email: values.email,
+          phone: values.phone || undefined,
+          address: values.address || undefined,
+        });
+        toast.success('Client updated successfully');
+      } else {
+        await clientService.createClient({
+          name: values.name,
+          company: values.company,
+          email: values.email,
+          phone: values.phone || undefined,
+          address: values.address || undefined,
+          status: 'active',
+        });
+        toast.success('Client created successfully');
+      }
       form.reset();
       onSuccess();
     } catch (error) {
-      console.error('Failed to create client:', error);
-      toast.error('Failed to create client. Please try again.');
+      console.error('Failed to save client:', error);
+      toast.error('Failed to save client. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -132,7 +157,7 @@ export function ClientForm({ onSuccess }: ClientFormProps) {
         <div className="flex justify-end pt-2">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create Client
+            {client ? 'Save Changes' : 'Create Client'}
           </Button>
         </div>
       </form>
