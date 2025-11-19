@@ -1,37 +1,71 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { teamService } from '@/services/teams';
+import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-const teamMemberSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  role: z.string().min(2, { message: "Role is required." }),
-  status: z.enum(['active', 'inactive']),
+const teamMemberFormSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  role: z.string().min(2, 'Role is required'),
+  phone: z.string().optional(),
 });
-type TeamMemberFormValues = z.infer<typeof teamMemberSchema>;
+type TeamMemberFormValues = z.infer<typeof teamMemberFormSchema>;
 interface TeamMemberFormProps {
-  onSubmit: (data: TeamMemberFormValues) => void;
-  isSubmitting: boolean;
-  defaultValues?: Partial<TeamMemberFormValues>;
+  onSuccess: () => void;
 }
-export function TeamMemberForm({ onSubmit, isSubmitting, defaultValues }: TeamMemberFormProps) {
+export function TeamMemberForm({ onSuccess }: TeamMemberFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<TeamMemberFormValues>({
-    resolver: zodResolver(teamMemberSchema),
-    defaultValues: defaultValues || {
-      name: "",
-      email: "",
-      role: "",
-      status: "active",
+    resolver: zodResolver(teamMemberFormSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      role: '',
+      phone: '',
     },
   });
+  async function onSubmit(values: TeamMemberFormValues) {
+    setIsSubmitting(true);
+    try {
+      await teamService.createTeamMember({
+        name: values.name,
+        email: values.email,
+        role: values.role,
+        phone: values.phone || undefined,
+        status: 'active',
+      });
+      toast.success('Team member invited successfully');
+      form.reset();
+      onSuccess();
+    } catch (error) {
+      console.error('Failed to invite team member:', error);
+      toast.error('Failed to invite team member. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -39,7 +73,7 @@ export function TeamMemberForm({ onSubmit, isSubmitting, defaultValues }: TeamMe
             <FormItem>
               <FormLabel>Full Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Sarah Jenkins" {...field} />
+                <Input placeholder="Jane Doe" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -52,56 +86,58 @@ export function TeamMemberForm({ onSubmit, isSubmitting, defaultValues }: TeamMe
             <FormItem>
               <FormLabel>Email Address</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="name@motionpine.com" {...field} />
+                <Input type="email" placeholder="jane@company.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Role</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Senior Designer" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="role"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Role</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Senior Designer">Senior Designer</SelectItem>
+                    <SelectItem value="Frontend Developer">Frontend Developer</SelectItem>
+                    <SelectItem value="Project Manager">Project Manager</SelectItem>
+                    <SelectItem value="Creative Director">Creative Director</SelectItem>
+                    <SelectItem value="Finance Manager">Finance Manager</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone (Optional)</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
+                  <Input placeholder="+1 (555) 000-0000" {...field} />
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Sending Invite...
-            </>
-          ) : (
-            'Send Invite'
-          )}
-        </Button>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="flex justify-end pt-2">
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Send Invite
+          </Button>
+        </div>
       </form>
     </Form>
   );

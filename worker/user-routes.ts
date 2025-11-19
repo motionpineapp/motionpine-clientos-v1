@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
-import { 
-  ClientEntity, 
-  ProjectEntity, 
-  ExpenseEntity, 
-  SubscriptionEntity, 
-  TeamMemberEntity, 
+import {
+  ClientEntity,
+  ProjectEntity,
+  ExpenseEntity,
+  SubscriptionEntity,
+  TeamMemberEntity,
   PineTransactionEntity,
   ChatEntity
 } from "./entities";
@@ -91,11 +91,23 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const { items } = await SubscriptionEntity.list(c.env);
     return ok(c, items);
   });
+  app.post('/api/subscriptions', async (c) => {
+    const body = await c.req.json();
+    const id = body.id || crypto.randomUUID();
+    const entity = await SubscriptionEntity.create(c.env, { ...body, id });
+    return ok(c, entity);
+  });
   // --- TEAMS ---
   app.get('/api/teams', async (c) => {
     await TeamMemberEntity.ensureSeed(c.env);
     const { items } = await TeamMemberEntity.list(c.env);
     return ok(c, items);
+  });
+  app.post('/api/teams', async (c) => {
+    const body = await c.req.json();
+    const id = body.id || crypto.randomUUID();
+    const entity = await TeamMemberEntity.create(c.env, { ...body, id });
+    return ok(c, entity);
   });
   // --- PINES (Credits) ---
   app.get('/api/pines', async (c) => {

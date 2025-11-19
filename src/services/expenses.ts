@@ -12,5 +12,11 @@ export const expenseService = {
       method: 'POST',
       body: JSON.stringify(expense)
     });
+  },
+  addSubscription: async (subscription: Omit<Subscription, 'id'>): Promise<Subscription> => {
+    return api<Subscription>('/api/subscriptions', {
+      method: 'POST',
+      body: JSON.stringify(subscription)
+    });
   }
 };
