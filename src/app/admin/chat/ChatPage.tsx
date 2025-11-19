@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { chatService } from '@/services/chat';
 import { useAuthStore } from '@/services/auth';
@@ -27,6 +27,16 @@ export function ChatPage() {
   useEffect(() => {
     loadChats();
   }, []);
+  const createChatIfNeeded = useCallback(async (clientId: string) => {
+    try {
+      const newChat = await chatService.createChatForClient(clientId);
+      setChats(prev => [...prev, newChat]);
+      setSelectedChatId(newChat.id);
+    } catch (error) {
+      console.error('Could not create chat for client', error);
+      toast.error('Failed to initialize chat');
+    }
+  }, []);
   // Handle initial client selection from URL
   useEffect(() => {
     if (initialClientId && chats.length > 0) {
@@ -35,14 +45,13 @@ export function ChatPage() {
         setSelectedChatId(chat.id);
       } else {
         // If chat doesn't exist for this client, we might need to create one
-        // For now, we'll just try to find it or ignore
         createChatIfNeeded(initialClientId);
       }
     } else if (!selectedChatId && chats.length > 0 && !initialClientId) {
       // Default to first chat if none selected
       setSelectedChatId(chats[0].id);
     }
-  }, [initialClientId, chats]);
+  }, [initialClientId, chats, selectedChatId, createChatIfNeeded]);
   // Load messages when chat is selected
   useEffect(() => {
     if (selectedChatId) {
@@ -58,15 +67,6 @@ export function ChatPage() {
       toast.error('Failed to load conversations');
     } finally {
       setIsLoadingChats(false);
-    }
-  };
-  const createChatIfNeeded = async (clientId: string) => {
-    try {
-      const newChat = await chatService.createChatForClient(clientId);
-      setChats(prev => [...prev, newChat]);
-      setSelectedChatId(newChat.id);
-    } catch (error) {
-      console.error('Could not create chat for client', error);
     }
   };
   const loadMessages = async (chatId: string) => {

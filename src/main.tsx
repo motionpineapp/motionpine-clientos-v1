@@ -21,6 +21,11 @@ import { ProjectsPage } from '@/app/admin/projects/ProjectsPage';
 import { ChatPage } from '@/app/admin/chat/ChatPage';
 import { ExpensesPage } from '@/app/admin/expenses/ExpensesPage';
 import { TeamsPage } from '@/app/admin/teams/TeamsPage';
+import { SettingsPage } from '@/app/admin/settings/SettingsPage';
+import { ClientProjectsPage } from '@/app/client/projects/ClientProjectsPage';
+import { ClientChatPage } from '@/app/client/chat/ClientChatPage';
+import { IntakePage } from '@/app/client/intake/IntakePage';
+import { ClientSettingsPage } from '@/app/client/settings/ClientSettingsPage';
 import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 const router = createBrowserRouter([
@@ -47,7 +52,7 @@ const router = createBrowserRouter([
       { path: "chat", element: <ChatPage /> },
       { path: "expenses", element: <ExpensesPage /> },
       { path: "teams", element: <TeamsPage /> },
-      { path: "settings", element: <div>Settings Module (Coming Soon)</div> },
+      { path: "settings", element: <SettingsPage /> },
     ]
   },
   // Client Routes
@@ -57,10 +62,10 @@ const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />,
     children: [
       { path: "dashboard", element: <ClientDashboard /> },
-      { path: "projects", element: <div>Projects Module (Coming Soon)</div> },
-      { path: "chat", element: <div>Chat Module (Coming Soon)</div> },
-      { path: "intake", element: <div>Intake Module (Coming Soon)</div> },
-      { path: "settings", element: <div>Settings Module (Coming Soon)</div> },
+      { path: "projects", element: <ClientProjectsPage /> },
+      { path: "chat", element: <ClientChatPage /> },
+      { path: "intake", element: <IntakePage /> },
+      { path: "settings", element: <ClientSettingsPage /> },
     ]
   },
   // Fallback
