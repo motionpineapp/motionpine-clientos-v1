@@ -122,7 +122,7 @@ export function SettingsPage() {
               <CardDescription>Irreversible actions for your account.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="destructive" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
+              <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
                 Deactivate Account
               </Button>
             </CardContent>

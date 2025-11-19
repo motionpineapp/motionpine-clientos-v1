@@ -1,10 +1,11 @@
 import { PineTransaction } from '@shared/types';
 import { api } from '@/lib/api-client';
 export const pineService = {
-  getBalance: async (clientId: string): Promise<number> => {
-    return api<number>(`/api/pines/balance/${clientId}`);
-  },
   getTransactions: async (clientId: string): Promise<PineTransaction[]> => {
-    return api<PineTransaction[]>(`/api/pines/transactions/${clientId}`);
+    return api<PineTransaction[]>(`/api/pines?clientId=${clientId}`);
   },
+  getBalance: async (clientId: string): Promise<number> => {
+    const transactions = await api<PineTransaction[]>(`/api/pines?clientId=${clientId}`);
+    return transactions.reduce((acc, curr) => acc + curr.amount, 0);
+  }
 };

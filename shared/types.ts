@@ -88,3 +88,12 @@ export interface TeamMember {
   phone?: string;
   joinedAt: string; // ISO Date string
 }
+// Pine Credit System Types
+export interface PineTransaction {
+  id: string;
+  clientId: string;
+  type: 'purchase' | 'usage';
+  amount: number;
+  description: string;
+  date: string; // ISO Date string
+}
