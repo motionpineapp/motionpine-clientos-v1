@@ -24,10 +24,9 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 const subscriptionFormSchema = z.object({
   name: z.string().min(2, 'Service name must be at least 2 characters'),
-  // Use preprocess to handle string input from form safely
   price: z.preprocess(
     (val) => (val === '' || val === undefined ? undefined : Number(val)),
-    z.number().min(0.01, 'Price must be greater than 0')
+    z.number().positive('Price must be greater than 0')
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
   nextBillingDate: z.string().min(1, 'Start date is required'),

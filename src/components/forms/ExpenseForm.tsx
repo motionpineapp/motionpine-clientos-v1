@@ -27,7 +27,7 @@ const expenseFormSchema = z.object({
   // Use preprocess to handle string input from form safely
   cost: z.preprocess(
     (val) => (val === '' || val === undefined ? undefined : Number(val)),
-    z.number({ required_error: 'Cost is required' }).min(0.01, 'Cost must be greater than 0')
+    z.number().min(0.01, 'Cost must be greater than 0')
   ),
   date: z.string().min(1, 'Date is required'),
   assignedTo: z.string().min(2, 'Assigned person is required'),
