@@ -24,7 +24,11 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 const expenseFormSchema = z.object({
   item: z.string().min(2, 'Item name must be at least 2 characters'),
-  cost: z.coerce.number().min(0.01, 'Cost must be greater than 0'),
+  // Use preprocess to handle string input from form safely
+  cost: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : Number(val)),
+    z.number({ invalid_type_error: 'Cost must be a number' }).min(0.01, 'Cost must be greater than 0')
+  ),
   date: z.string().min(1, 'Date is required'),
   assignedTo: z.string().min(2, 'Assigned person is required'),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
@@ -39,7 +43,8 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
     resolver: zodResolver(expenseFormSchema),
     defaultValues: {
       item: '',
-      cost: 0,
+      // Use undefined for empty state so input doesn't show "0"
+      cost: undefined,
       date: new Date().toISOString().split('T')[0],
       assignedTo: '',
       category: 'office',
@@ -89,11 +94,14 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
               <FormItem>
                 <FormLabel>Cost ($)</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0.00" 
-                    {...field} 
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    {...field}
+                    // Handle undefined value for controlled input
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -121,8 +129,8 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(value as ExpenseFormValues['category'])} 
+                <Select
+                  onValueChange={(value) => field.onChange(value as ExpenseFormValues['category'])}
                   defaultValue={field.value}
                 >
                   <FormControl>

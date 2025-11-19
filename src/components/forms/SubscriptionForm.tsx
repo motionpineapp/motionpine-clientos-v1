@@ -24,7 +24,11 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 const subscriptionFormSchema = z.object({
   name: z.string().min(2, 'Service name must be at least 2 characters'),
-  price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
+  // Use preprocess to handle string input from form safely
+  price: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : Number(val)),
+    z.number({ invalid_type_error: 'Price must be a number' }).min(0.01, 'Price must be greater than 0')
+  ),
   billingCycle: z.enum(['monthly', 'yearly']),
   nextBillingDate: z.string().min(1, 'Start date is required'),
 });
@@ -38,7 +42,8 @@ export function SubscriptionForm({ onSuccess }: SubscriptionFormProps) {
     resolver: zodResolver(subscriptionFormSchema),
     defaultValues: {
       name: '',
-      price: 0,
+      // Use undefined for empty state so input doesn't show "0"
+      price: undefined,
       billingCycle: 'monthly',
       nextBillingDate: new Date().toISOString().split('T')[0],
     },
@@ -87,11 +92,14 @@ export function SubscriptionForm({ onSuccess }: SubscriptionFormProps) {
               <FormItem>
                 <FormLabel>Price ($)</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0.00" 
-                    {...field} 
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    {...field}
+                    // Handle undefined value for controlled input
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -104,8 +112,8 @@ export function SubscriptionForm({ onSuccess }: SubscriptionFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Billing Cycle</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(value as SubscriptionFormValues['billingCycle'])} 
+                <Select
+                  onValueChange={(value) => field.onChange(value as SubscriptionFormValues['billingCycle'])}
                   defaultValue={field.value}
                 >
                   <FormControl>
