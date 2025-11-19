@@ -9,9 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Wallet, ArrowUpRight, ArrowDownLeft, Loader2, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';interface SeparatorProps {children?: React.ReactNode;className?: string;style?: React.CSSProperties;[key: string]: unknown;}
 export function WalletPage() {
-  const user = useAuthStore(s => s.user);
+  const user = useAuthStore((s) => s.user);
   const [transactions, setTransactions] = useState<PineTransaction[]>([]);
   const [balance, setBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,9 +24,9 @@ export function WalletPage() {
     try {
       setIsLoading(true);
       const [txs, bal] = await Promise.all([
-        pineService.getTransactions(clientId),
-        pineService.getBalance(clientId)
-      ]);
+      pineService.getTransactions(clientId),
+      pineService.getBalance(clientId)]
+      );
       setTransactions(txs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setBalance(bal);
     } catch (error) {
@@ -43,17 +43,17 @@ export function WalletPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">Loading wallet...</p>
         </div>
-      </div>
-    );
+      </div>);
+
   }
   return (
     <div className="space-y-8 animate-fade-in">
       <PageHeader
         title="My Wallet"
-        description="Manage your Pines credits and view transaction history."
-      />
+        description="Manage your Pines credits and view transaction history." />
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Balance Card */}
+        {}
         <Card className="md:col-span-2 border-none shadow-lg bg-gradient-to-br from-gray-900 to-gray-800 text-white overflow-hidden relative">
           <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
           <CardContent className="p-8 flex flex-col justify-between h-full relative z-10">
@@ -78,13 +78,13 @@ export function WalletPage() {
             </div>
           </CardContent>
         </Card>
-        {/* Quick Stats */}
+        {}
         <Card className="border-gray-100 shadow-sm flex flex-col justify-center">
           <CardContent className="p-6 space-y-6">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Total Spent (All Time)</p>
               <p className="text-2xl font-bold text-gray-900">
-                {Math.abs(transactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0)).toLocaleString()} Pines
+                {Math.abs(transactions.filter((t) => t.amount < 0).reduce((acc, t) => acc + t.amount, 0)).toLocaleString()} Pines
               </p>
             </div>
             <Separator />
@@ -97,7 +97,7 @@ export function WalletPage() {
           </CardContent>
         </Card>
       </div>
-      {/* Transactions Table */}
+      {}
       <Card className="border-gray-100 shadow-sm">
         <CardHeader>
           <CardTitle>Transaction History</CardTitle>
@@ -114,24 +114,24 @@ export function WalletPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.length === 0 ? (
-                <TableRow>
+              {transactions.length === 0 ?
+              <TableRow>
                   <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
                     No transactions found.
                   </TableCell>
-                </TableRow>
-              ) : (
-                transactions.map((tx) => (
-                  <TableRow key={tx.id}>
+                </TableRow> :
+
+              transactions.map((tx) =>
+              <TableRow key={tx.id}>
                     <TableCell className="text-muted-foreground">
                       {new Date(tx.date).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="font-medium">{tx.description}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn(
-                        "capitalize",
-                        tx.type === 'purchase' ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-600 border-gray-200"
-                      )}>
+                    "capitalize",
+                    tx.type === 'purchase' ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-600 border-gray-200"
+                  )}>
                         {tx.type}
                       </Badge>
                     </TableCell>
@@ -139,12 +139,12 @@ export function WalletPage() {
                       {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString()}
                     </TableCell>
                   </TableRow>
-                ))
-              )}
+              )
+              }
             </TableBody>
           </Table>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>);
+
 }
