@@ -12,16 +12,18 @@ import { Expense } from '@shared/types';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+const categories = ['infrastructure', 'software', 'office', 'other'] as const;
+
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
-    (val) => (val === "" ? undefined : val),
-    z.coerce.number().positive({ message: "Cost must be a positive number." })
+    (val) => (val === "" ? undefined : String(val)),
+    z.string().transform(Number).pipe(z.number().positive({ message: "Cost must be a positive number." }))
   ),
   date: z.date().refine(date => date !== null && date !== undefined, {
     message: "A purchase date is required.",
   }),
-  category: z.enum(['infrastructure', 'software', 'office', 'other']),
+  category: z.enum(categories),
 });
 type ExpenseFormValues = z.infer<typeof expenseSchema>;
 interface ExpenseFormProps {
@@ -36,7 +38,7 @@ export function ExpenseForm({ expense, onSubmit, isSubmitting }: ExpenseFormProp
       item: expense?.item || '',
       cost: expense?.cost,
       date: expense?.date ? new Date(expense.date) : new Date(),
-      category: expense?.category || 'other',
+      category: expense?.category || 'other' as typeof categories[number],
     },
   });
   return (
