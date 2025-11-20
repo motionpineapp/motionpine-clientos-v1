@@ -4,7 +4,9 @@ import { useAuthStore } from '@/services/auth';
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { checkSession, isAuthenticated, user } = useAuthStore();
+  const checkSession = useAuthStore(s => s.checkSession);
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const user = useAuthStore(s => s.user);
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
