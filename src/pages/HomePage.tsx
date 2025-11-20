@@ -9,6 +9,7 @@ export function HomePage() {
   useEffect(() => {
     const init = async () => {
       await checkSession();
+      const { isAuthenticated, user } = useAuthStore.getState();
       if (isAuthenticated && user) {
         if (user.role === 'admin') {
           navigate('/admin/dashboard', { replace: true });
@@ -20,7 +21,7 @@ export function HomePage() {
       }
     };
     init();
-  }, [isAuthenticated, user, navigate, checkSession]);
+  }, [checkSession, navigate]);
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="animate-pulse flex flex-col items-center gap-4">
