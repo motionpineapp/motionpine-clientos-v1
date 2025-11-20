@@ -12,22 +12,29 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
-  cost: z.coerce.number().positive({ message: "Cost must be a positive number." }),
-  date: z.date({ required_error: "A purchase date is required." }),
+  cost: z.string().min(1, { message: "Cost is required." })
+    .transform(val => parseFloat(val))
+    .pipe(z.number().positive({ message: "Cost must be a positive number." })),
+  date: z.date(),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
 type ExpenseFormValues = z.infer<typeof expenseSchema>;
+// The form will handle `cost` as a string, but the submitted value will be a number.
+type ExpenseFormInput = Omit<ExpenseFormValues, 'cost'> & {
+  cost: string | number;
+};
 interface ExpenseFormProps {
   onSubmit: (data: ExpenseFormValues) => void;
   isSubmitting: boolean;
-  defaultValues?: Partial<ExpenseFormValues>;
+  defaultValues?: Partial<ExpenseFormInput>;
 }
 export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFormProps) {
-  const form = useForm<ExpenseFormValues>({
+  const form = useForm<ExpenseFormInput>({
     resolver: zodResolver(expenseSchema),
     defaultValues: defaultValues || {
       item: "",
+      cost: "",
       date: new Date(),
       category: "other",
     },

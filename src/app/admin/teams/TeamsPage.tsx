@@ -6,11 +6,22 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription
+} from '@/components/ui/dialog';
 import { Plus, Mail, Phone, MoreHorizontal, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { TeamMemberForm } from '@/components/forms/TeamMemberForm';
 export function TeamsPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   useEffect(() => {
     loadTeam();
   }, []);
@@ -23,6 +34,24 @@ export function TeamsPage() {
       toast.error('Failed to load team members');
     } finally {
       setIsLoading(false);
+    }
+  };
+  const handleInviteMember = async (data: any) => {
+    setIsSubmitting(true);
+    try {
+      const newMemberData = {
+        ...data,
+        joinedAt: new Date().toISOString(),
+      };
+      await teamService.createTeamMember(newMemberData);
+      toast.success('Team member invited successfully!');
+      setIsModalOpen(false);
+      loadTeam();
+    } catch (error) {
+      toast.error('Failed to invite team member.');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const getStatusColor = (status: string) => {
@@ -39,10 +68,23 @@ export function TeamsPage() {
         title="Team Directory"
         description="Manage your agency team members and roles."
       >
-        <Button onClick={() => toast.info('This feature is coming soon!')}>
-          <Plus className="mr-2 h-4 w-4" />
-          Invite Member
-        </Button>
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Invite Member
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Invite New Team Member</DialogTitle>
+              <DialogDescription>
+                Enter the details to send an invitation.
+              </DialogDescription>
+            </DialogHeader>
+            <TeamMemberForm onSubmit={handleInviteMember} isSubmitting={isSubmitting} />
+          </DialogContent>
+        </Dialog>
       </PageHeader>
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
@@ -94,17 +136,28 @@ export function TeamsPage() {
               </CardFooter>
             </Card>
           ))}
-          {/* Add New Card Placeholder */}
-          <button
-            onClick={() => toast.info('This feature is coming soon!')}
-            className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-6 hover:border-primary/50 hover:bg-gray-50 transition-all group h-full min-h-[300px]"
-          >
-            <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mb-4 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-              <Plus className="h-8 w-8 text-gray-400 group-hover:text-primary" />
-            </div>
-            <h3 className="font-semibold text-gray-900">Add Team Member</h3>
-            <p className="text-sm text-muted-foreground mt-1">Invite a new colleague</p>
-          </button>
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogTrigger asChild>
+              <button
+                className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-6 hover:border-primary/50 hover:bg-gray-50 transition-all group h-full min-h-[300px]"
+              >
+                <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mb-4 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                  <Plus className="h-8 w-8 text-gray-400 group-hover:text-primary" />
+                </div>
+                <h3 className="font-semibold text-gray-900">Add Team Member</h3>
+                <p className="text-sm text-muted-foreground mt-1">Invite a new colleague</p>
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Invite New Team Member</DialogTitle>
+                <DialogDescription>
+                  Enter the details to send an invitation.
+                </DialogDescription>
+              </DialogHeader>
+              <TeamMemberForm onSubmit={handleInviteMember} isSubmitting={isSubmitting} />
+            </DialogContent>
+          </Dialog>
         </div>
       )}
     </div>

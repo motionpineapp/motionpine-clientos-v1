@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 const projectSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters." }),
-  clientId: z.string({ required_error: "Please select a client." }),
+  clientId: z.string().min(1, { message: "Please select a client." }),
   status: z.enum(['todo', 'in-progress', 'done']),
   priority: z.enum(['low', 'medium', 'high']).optional(),
   description: z.string().optional(),
@@ -33,6 +33,7 @@ export function ProjectForm({ clients, onSubmit, isSubmitting, defaultValues }: 
     resolver: zodResolver(projectSchema),
     defaultValues: defaultValues || {
       title: "",
+      clientId: "",
       status: "todo",
       priority: "medium",
     },

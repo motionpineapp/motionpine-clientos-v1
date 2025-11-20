@@ -18,12 +18,16 @@ import {
 import { Plus, Download, Filter, Loader2, CreditCard, Server } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExpenseForm } from '@/components/forms/ExpenseForm';
+import { SubscriptionForm } from '@/components/forms/SubscriptionForm';
+import { addDays, addMonths, addYears } from 'date-fns';
 export function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isSubmittingExpense, setIsSubmittingExpense] = useState(false);
+  const [isSubModalOpen, setIsSubModalOpen] = useState(false);
+  const [isSubmittingSub, setIsSubmittingSub] = useState(false);
   useEffect(() => {
     loadData();
   }, []);
@@ -43,7 +47,7 @@ export function ExpensesPage() {
     }
   };
   const handleAddExpense = async (data: any) => {
-    setIsSubmitting(true);
+    setIsSubmittingExpense(true);
     try {
       const newExpenseData = {
         ...data,
@@ -51,13 +55,41 @@ export function ExpensesPage() {
       };
       await expenseService.createExpense(newExpenseData);
       toast.success('Expense added successfully!');
-      setIsModalOpen(false);
+      setIsExpenseModalOpen(false);
       loadData();
     } catch (error) {
       toast.error('Failed to add expense.');
       console.error(error);
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingExpense(false);
+    }
+  };
+  const handleAddSubscription = async (data: any) => {
+    setIsSubmittingSub(true);
+    try {
+      let startDate = new Date();
+      if (data.startDateOption === 'yesterday') startDate = addDays(new Date(), -1);
+      if (data.startDateOption === 'tomorrow') startDate = addDays(new Date(), 1);
+      if (data.startDateOption === 'custom') startDate = data.customStartDate;
+      const nextBillingDate = data.billingCycle === 'monthly'
+        ? addMonths(startDate, 1)
+        : addYears(startDate, 1);
+      const newSubscriptionData = {
+        name: data.name,
+        price: data.price,
+        billingCycle: data.billingCycle,
+        status: 'active',
+        nextBillingDate: nextBillingDate.toISOString(),
+      };
+      await expenseService.createSubscription(newSubscriptionData);
+      toast.success('Subscription added successfully!');
+      setIsSubModalOpen(false);
+      loadData();
+    } catch (error) {
+      toast.error('Failed to add subscription.');
+      console.error(error);
+    } finally {
+      setIsSubmittingSub(false);
     }
   };
   const totalExpenses = expenses.reduce((acc, curr) => acc + curr.cost, 0);
@@ -70,7 +102,7 @@ export function ExpensesPage() {
         title="Expenses & Infrastructure"
         description="Track office spending and recurring software subscriptions."
       >
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <Dialog open={isExpenseModalOpen} onOpenChange={setIsExpenseModalOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -84,11 +116,10 @@ export function ExpensesPage() {
                 Log a new one-time purchase or expense.
               </DialogDescription>
             </DialogHeader>
-            <ExpenseForm onSubmit={handleAddExpense} isSubmitting={isSubmitting} />
+            <ExpenseForm onSubmit={handleAddExpense} isSubmitting={isSubmittingExpense} />
           </DialogContent>
         </Dialog>
       </PageHeader>
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-gray-100 shadow-sm">
           <CardHeader className="pb-2">
@@ -118,7 +149,6 @@ export function ExpensesPage() {
           </CardContent>
         </Card>
       </div>
-      {/* Main Content */}
       <Tabs defaultValue="infrastructure" className="w-full">
         <div className="flex items-center justify-between mb-4">
           <TabsList className="bg-gray-100 p-1">
@@ -132,10 +162,23 @@ export function ExpensesPage() {
             </TabsTrigger>
           </TabsList>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => toast.info('This feature is coming soon!')}>
-              <Plus className="h-4 w-4" />
-              Add Subscription
-            </Button>
+            <Dialog open={isSubModalOpen} onOpenChange={setIsSubModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Subscription
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Subscription</DialogTitle>
+                  <DialogDescription>
+                    Log a new recurring software subscription.
+                  </DialogDescription>
+                </DialogHeader>
+                <SubscriptionForm onSubmit={handleAddSubscription} isSubmitting={isSubmittingSub} />
+              </DialogContent>
+            </Dialog>
             <Button variant="outline" size="sm" className="gap-2">
               <Filter className="h-4 w-4" />
               Filter
