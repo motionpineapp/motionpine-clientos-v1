@@ -26,7 +26,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     if (!isStr(email) || !isStr(password)) {
       return bad(c, 'Email and password are required.');
     }
-    const userInstance = new UserEntity(c.env, email);
+    const userInstance = new UserEntity(c.env, email.toLowerCase());
     if (!(await userInstance.exists())) {
       return notFound(c, 'Invalid credentials.');
     }
