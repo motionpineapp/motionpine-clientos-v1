@@ -27,14 +27,13 @@ const subscriptionSchema = z.object({
   message: "Please select a custom start date.",
   path: ["customStartDate"],
 });
-type SubscriptionFormValues = z.infer<typeof subscriptionSchema>;
 interface SubscriptionFormProps {
-  onSubmit: (data: SubscriptionFormValues) => void;
+  onSubmit: (data: z.infer<typeof subscriptionSchema>) => void;
   isSubmitting: boolean;
-  defaultValues?: Partial<SubscriptionFormValues>;
+  defaultValues?: Partial<z.infer<typeof subscriptionSchema>>;
 }
 export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: SubscriptionFormProps) {
-  const form = useForm<SubscriptionFormValues>({
+  const form = useForm<z.infer<typeof subscriptionSchema>>({
     resolver: zodResolver(subscriptionSchema),
     defaultValues: defaultValues || {
       name: "",

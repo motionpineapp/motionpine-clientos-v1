@@ -103,8 +103,8 @@ export function ClientProjectsPage() {
                       {project.status === 'done' ? '100%' : project.status === 'in-progress' ? '65%' : '0%'}
                     </span>
                   </div>
-                  <Progress 
-                    value={project.status === 'done' ? 100 : project.status === 'in-progress' ? 65 : 0} 
+                  <Progress
+                    value={project.status === 'done' ? 100 : project.status === 'in-progress' ? 65 : 0}
                     className="h-2"
                   />
                 </div>
@@ -112,7 +112,7 @@ export function ClientProjectsPage() {
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     <span>
-                      {project.dueDate 
+                      {project.dueDate
                         ? new Date(project.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
                         : 'No due date'}
                     </span>
