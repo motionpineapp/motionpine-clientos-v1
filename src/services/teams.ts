@@ -1,24 +1,14 @@
 import { TeamMember } from '@shared/types';
-import { api } from '@/lib/api-client';
+import { MOCK_TEAM } from './mock-data';
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const teamService = {
   getTeamMembers: async (): Promise<TeamMember[]> => {
-    return api<TeamMember[]>('/api/teams');
+    await delay(300);
+    return Promise.resolve(MOCK_TEAM);
   },
   getTeamMember: async (id: string): Promise<TeamMember | undefined> => {
-    // Since we don't have a specific single-member endpoint in routes yet,
-    // we can fetch all and find. Or add the route.
-    // For now, let's fetch all to be safe with current routes.
-    const members = await api<TeamMember[]>('/api/teams');
-    return members.find(m => m.id === id);
+    await delay(300);
+    const member = MOCK_TEAM.find(m => m.id === id);
+    return Promise.resolve(member);
   },
-  createTeamMember: async (member: Omit<TeamMember, 'id' | 'joinedAt'>): Promise<TeamMember> => {
-    const newMember = {
-      ...member,
-      joinedAt: new Date().toISOString()
-    };
-    return api<TeamMember>('/api/teams', {
-      method: 'POST',
-      body: JSON.stringify(newMember)
-    });
-  }
 };

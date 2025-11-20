@@ -9,7 +9,6 @@ import {
   Settings,
   LogOut,
   FileText,
-  Wallet,
   Menu
 } from 'lucide-react';
 import { useAuthStore } from '@/services/auth';
@@ -56,7 +55,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { icon: FolderKanban, label: 'Projects', href: '/client/projects' },
     { icon: MessageSquare, label: 'Chat', href: '/client/chat' },
     { icon: FileText, label: 'Intake', href: '/client/intake' },
-    { icon: Wallet, label: 'Wallet', href: '/client/wallet' },
     { icon: Settings, label: 'Settings', href: '/client/settings' },
   ];
   const links = isAdmin ? adminLinks : clientLinks;
@@ -117,7 +115,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             className="mt-2 w-full justify-start text-muted-foreground hover:text-destructive group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
             onClick={handleLogout}
           >
-            <LogOut className="size-4 mr-2 group-data-[collapsible=icon]:mr-0" />
+            <LogOut className="mr-2 h-4 w-4 group-data-[collapsible=icon]:mr-0" />
             <span className="group-data-[collapsible=icon]:hidden">Logout</span>
           </Button>
         </SidebarFooter>

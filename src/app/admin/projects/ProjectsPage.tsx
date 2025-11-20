@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { projectService } from '@/services/projects';
 import { Project, ProjectStatus } from '@shared/types';
 import { PageHeader } from '@/components/PageHeader';
@@ -7,23 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Plus, Calendar, MoreHorizontal, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { ProjectForm } from '@/components/forms/ProjectForm';
 export function ProjectsPage() {
-  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   useEffect(() => {
     loadProjects();
   }, []);
@@ -39,10 +27,6 @@ export function ProjectsPage() {
       setIsLoading(false);
     }
   };
-  const handleCreateSuccess = () => {
-    setIsCreateOpen(false);
-    loadProjects();
-  };
   const columns: { id: ProjectStatus; label: string; color: string }[] = [
     { id: 'todo', label: 'To Do', color: 'bg-gray-100 text-gray-600' },
     { id: 'in-progress', label: 'In Progress', color: 'bg-blue-100 text-blue-600' },
@@ -55,23 +39,10 @@ export function ProjectsPage() {
         description="Track active projects and tasks."
         className="mb-6 flex-none"
       >
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Create New Project</DialogTitle>
-              <DialogDescription>
-                Define the scope and assign a client for the new project.
-              </DialogDescription>
-            </DialogHeader>
-            <ProjectForm onSuccess={handleCreateSuccess} />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => toast.info('This feature is coming soon!')}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Project
+        </Button>
       </PageHeader>
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
@@ -101,10 +72,9 @@ export function ProjectsPage() {
               {/* Column Content */}
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {projects.filter(p => p.status === col.id).map(project => (
-                  <Card 
-                    key={project.id} 
-                    className="border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                    onClick={() => navigate(`/admin/projects/${project.id}`)}
+                  <Card
+                    key={project.id}
+                    className="border-gray-200 shadow-sm hover:shadow-md transition-all group"
                   >
                     <CardContent className="p-4 space-y-3">
                       <div className="flex justify-between items-start">

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { MOCK_ADMIN_USER, MOCK_CLIENT_USER } from './mock-data';
 export type UserRole = 'admin' | 'client';
 export interface User {
   id: string;
@@ -12,7 +13,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password?: string) => Promise<void>;
+  login: (role: UserRole) => Promise<void>;
   logout: () => void;
   checkSession: () => Promise<void>;
 }
@@ -22,41 +23,16 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  login: async (email: string, password?: string) => {
+  login: async (role: UserRole) => {
     set({ isLoading: true });
-    try {
-      // In a real app, you'd use a proper API client.
-      // For this project, we use fetch directly.
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        // The backend should return a meaningful error message
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
-
-      const user: User = await response.json();
-
-      // Persist to localStorage for session management
-      localStorage.setItem('motionpine_user', JSON.stringify(user));
-
-      set({
-        isAuthenticated: true,
-        user: user,
-        isLoading: false
-      });
-    } catch (error) {
-      console.error('Login error:', error);
-      set({ isLoading: false });
-      // Re-throw the error so the UI component can handle it (e.g., show a toast)
-      throw error;
-    }
+    await delay(500); // Simulate network request
+    const user = role === 'admin' ? MOCK_ADMIN_USER : MOCK_CLIENT_USER;
+    localStorage.setItem('motionpine_user', JSON.stringify(user));
+    set({
+      isAuthenticated: true,
+      user: user,
+      isLoading: false
+    });
   },
   logout: () => {
     localStorage.removeItem('motionpine_user');

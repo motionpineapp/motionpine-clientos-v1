@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -20,26 +19,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { PageHeader } from '@/components/PageHeader';
 import { clientService } from '@/services/clients';
 import { Client } from '@shared/types';
 import { Search, MoreHorizontal, Plus, Filter, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ClientForm } from '@/components/forms/ClientForm';
 export function ClientsPage() {
-  const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   useEffect(() => {
     loadClients();
   }, []);
@@ -54,10 +42,6 @@ export function ClientsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-  const handleCreateSuccess = () => {
-    setIsCreateOpen(false);
-    loadClients();
   };
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -78,23 +62,10 @@ export function ClientsPage() {
         title="Clients"
         description="Manage your client relationships and accounts."
       >
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Client
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Add New Client</DialogTitle>
-              <DialogDescription>
-                Enter the details of the new client below.
-              </DialogDescription>
-            </DialogHeader>
-            <ClientForm onSuccess={handleCreateSuccess} />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => toast.info('This feature is coming soon!')}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Client
+        </Button>
       </PageHeader>
       {/* Filters & Search */}
       <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
@@ -145,8 +116,7 @@ export function ClientsPage() {
               filteredClients.map((client) => (
                 <TableRow
                   key={client.id}
-                  className="cursor-pointer hover:bg-gray-50/50 transition-colors"
-                  onClick={() => navigate(`/admin/clients/${client.id}`)}
+                  className="hover:bg-gray-50/50 transition-colors"
                 >
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -188,10 +158,10 @@ export function ClientsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => navigate(`/admin/clients/${client.id}`)}>
+                        <DropdownMenuItem onClick={() => toast.info('Viewing details soon!')}>
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(`/admin/chat?clientId=${client.id}`)}>
+                        <DropdownMenuItem>
                           Message Client
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />

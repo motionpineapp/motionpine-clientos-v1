@@ -6,8 +6,7 @@ import {
   TeamMember,
   Chat,
   ChatMessage,
-  User,
-  PineTransaction
+  User
 } from '@shared/types';
 export const MOCK_ADMIN_USER: User = {
   id: 'admin-1',
@@ -356,10 +355,4 @@ export const MOCK_MESSAGES: ChatMessage[] = [
     senderName: 'Bob Smith',
     senderAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob'
   }
-];
-export const MOCK_PINE_TRANSACTIONS: PineTransaction[] = [
-  { id: 'pt1', clientId: 'c1', type: 'purchase', amount: 5000, description: 'Initial Credit Purchase', date: '2023-10-01T10:00:00Z' },
-  { id: 'pt2', clientId: 'c1', type: 'usage', amount: -250, description: 'Rush Request Fee', date: '2023-10-15T14:30:00Z' },
-  { id: 'pt3', clientId: 'c1', type: 'usage', amount: -1000, description: 'Website Redesign - Phase 1', date: '2023-10-20T18:00:00Z' },
-  { id: 'pt4', clientId: 'c1', type: 'purchase', amount: 2500, description: 'Credit Top-up', date: '2023-10-25T11:00:00Z' },
 ];

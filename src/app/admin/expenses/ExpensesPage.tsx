@@ -7,24 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Plus, Download, Filter, Loader2, CreditCard, Server } from 'lucide-react';
 import { toast } from 'sonner';
-import { ExpenseForm } from '@/components/forms/ExpenseForm';
-import { SubscriptionForm } from '@/components/forms/SubscriptionForm';
 export function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
   useEffect(() => {
     loadData();
   }, []);
@@ -43,14 +31,6 @@ export function ExpensesPage() {
       setIsLoading(false);
     }
   };
-  const handleCreateSuccess = () => {
-    setIsCreateOpen(false);
-    loadData();
-  };
-  const handleSubscriptionSuccess = () => {
-    setIsSubscriptionOpen(false);
-    loadData();
-  };
   const totalExpenses = expenses.reduce((acc, curr) => acc + curr.cost, 0);
   const monthlyRecurring = subscriptions
     .filter(s => s.status === 'active')
@@ -61,23 +41,10 @@ export function ExpensesPage() {
         title="Expenses & Infrastructure"
         description="Track office spending and recurring software subscriptions."
       >
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Expense
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Log New Expense</DialogTitle>
-              <DialogDescription>
-                Record a one-time purchase for the agency.
-              </DialogDescription>
-            </DialogHeader>
-            <ExpenseForm onSuccess={handleCreateSuccess} />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => toast.info('This feature is coming soon!')}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Expense
+        </Button>
       </PageHeader>
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -123,23 +90,10 @@ export function ExpensesPage() {
             </TabsTrigger>
           </TabsList>
           <div className="flex gap-2">
-            <Dialog open={isSubscriptionOpen} onOpenChange={setIsSubscriptionOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Subscription
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>Add Subscription</DialogTitle>
-                  <DialogDescription>
-                    Track a new recurring software or service.
-                  </DialogDescription>
-                </DialogHeader>
-                <SubscriptionForm onSuccess={handleSubscriptionSuccess} />
-              </DialogContent>
-            </Dialog>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => toast.info('This feature is coming soon!')}>
+              <Plus className="h-4 w-4" />
+              Add Subscription
+            </Button>
             <Button variant="outline" size="sm" className="gap-2">
               <Filter className="h-4 w-4" />
               Filter

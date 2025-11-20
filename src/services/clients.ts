@@ -1,39 +1,14 @@
 import { Client, ClientStatus } from '@shared/types';
-import { api } from '@/lib/api-client';
+import { MOCK_CLIENTS } from './mock-data';
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const clientService = {
   getClients: async (): Promise<Client[]> => {
-    return api<Client[]>('/api/clients');
+    await delay(300);
+    return Promise.resolve(MOCK_CLIENTS);
   },
   getClient: async (id: string): Promise<Client | undefined> => {
-    try {
-      return await api<Client>(`/api/clients/${id}`);
-    } catch (e) {
-      return undefined;
-    }
+    await delay(300);
+    const client = MOCK_CLIENTS.find(c => c.id === id);
+    return Promise.resolve(client);
   },
-  createClient: async (data: Omit<Client, 'id' | 'joinedAt' | 'totalProjects' | 'totalRevenue'>): Promise<Client> => {
-    const newClient = {
-      ...data,
-      joinedAt: new Date().toISOString(),
-      totalProjects: 0,
-      totalRevenue: 0,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.name}`
-    };
-    return api<Client>('/api/clients', {
-      method: 'POST',
-      body: JSON.stringify(newClient)
-    });
-  },
-  updateClient: async (id: string, data: Partial<Client>): Promise<Client> => {
-    return api<Client>(`/api/clients/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-  },
-  updateClientStatus: async (id: string, status: ClientStatus): Promise<Client | undefined> => {
-    return api<Client>(`/api/clients/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ status })
-    });
-  }
 };
