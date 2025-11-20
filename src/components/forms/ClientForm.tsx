@@ -4,30 +4,30 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Client, ClientStatus } from '@shared/types';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
+import { ClientStatus } from '@shared/types';
 const clientSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  company: z.string().min(2, { message: "Company name is required." }),
-  email: z.string().email({ message: "Please enter a valid email." }),
+  company: z.string().min(2, { message: "Company name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email address." }),
   status: z.enum(['active', 'paused', 'inactive']),
 });
 type ClientFormValues = z.infer<typeof clientSchema>;
 interface ClientFormProps {
-  client?: Client;
-  onSubmit: (data: ClientFormValues) => Promise<void>;
+  onSubmit: (data: ClientFormValues) => void;
   isSubmitting: boolean;
+  defaultValues?: Partial<ClientFormValues>;
 }
-export function ClientForm({ client, onSubmit, isSubmitting }: ClientFormProps) {
+export function ClientForm({ onSubmit, isSubmitting, defaultValues }: ClientFormProps) {
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
-    defaultValues: {
-      name: client?.name || '',
-      company: client?.company || '',
-      email: client?.email || '',
-      status: client?.status || 'active',
+    defaultValues: defaultValues || {
+      name: "",
+      company: "",
+      email: "",
+      status: "active",
     },
   });
   return (
@@ -40,7 +40,7 @@ export function ClientForm({ client, onSubmit, isSubmitting }: ClientFormProps) 
             <FormItem>
               <FormLabel>Full Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. John Doe" {...field} />
+                <Input placeholder="John Doe" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -53,7 +53,7 @@ export function ClientForm({ client, onSubmit, isSubmitting }: ClientFormProps) 
             <FormItem>
               <FormLabel>Company</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. Acme Inc." {...field} />
+                <Input placeholder="Acme Inc." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -66,7 +66,7 @@ export function ClientForm({ client, onSubmit, isSubmitting }: ClientFormProps) 
             <FormItem>
               <FormLabel>Email Address</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="e.g. john@acme.com" {...field} />
+                <Input type="email" placeholder="name@example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -94,12 +94,16 @@ export function ClientForm({ client, onSubmit, isSubmitting }: ClientFormProps) 
             </FormItem>
           )}
         />
-        <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {client ? 'Save Changes' : 'Create Client'}
-          </Button>
-        </div>
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Save Client'
+          )}
+        </Button>
       </form>
     </Form>
   );

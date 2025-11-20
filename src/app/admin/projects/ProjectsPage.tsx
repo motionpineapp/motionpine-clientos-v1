@@ -1,30 +1,71 @@
 import React, { useEffect, useState } from 'react';
 import { projectService } from '@/services/projects';
-import { Project, ProjectStatus } from '@shared/types';
+import { clientService } from '@/services/clients';
+import { Project, ProjectStatus, Client } from '@shared/types';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription
+} from '@/components/ui/dialog';
 import { Plus, Calendar, MoreHorizontal, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { ProjectForm } from '@/components/forms/ProjectForm';
 export function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   useEffect(() => {
-    loadProjects();
+    loadData();
   }, []);
-  const loadProjects = async () => {
+  const loadData = async () => {
     try {
       setIsLoading(true);
-      const data = await projectService.getProjects();
-      setProjects(data.items);
+      const [projectsData, clientsData] = await Promise.all([
+        projectService.getProjects(),
+        clientService.getClients()
+      ]);
+      setProjects(projectsData.items);
+      setClients(clientsData.items);
     } catch (error) {
-      toast.error('Failed to load projects');
+      toast.error('Failed to load projects or clients');
       console.error(error);
     } finally {
       setIsLoading(false);
+    }
+  };
+  const handleAddProject = async (data: any) => {
+    setIsSubmitting(true);
+    try {
+      const selectedClient = clients.find(c => c.id === data.clientId);
+      if (!selectedClient) {
+        throw new Error("Client not found");
+      }
+      const newProjectData = {
+        ...data,
+        clientName: selectedClient.name,
+        createdAt: new Date().toISOString(),
+        dueDate: data.dueDate?.toISOString(),
+      };
+      await projectService.createProject(newProjectData);
+      toast.success('Project created successfully!');
+      setIsModalOpen(false);
+      loadData();
+    } catch (error) {
+      toast.error('Failed to create project.');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const columns: { id: ProjectStatus; label: string; color: string }[] = [
@@ -39,10 +80,27 @@ export function ProjectsPage() {
         description="Track active projects and tasks."
         className="mb-6 flex-none"
       >
-        <Button onClick={() => toast.info('This feature is coming soon!')}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Project
-        </Button>
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Project</DialogTitle>
+              <DialogDescription>
+                Fill in the details to start a new project.
+              </DialogDescription>
+            </DialogHeader>
+            <ProjectForm
+              clients={clients}
+              onSubmit={handleAddProject}
+              isSubmitting={isSubmitting}
+            />
+          </DialogContent>
+        </Dialog>
       </PageHeader>
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
@@ -55,7 +113,6 @@ export function ProjectsPage() {
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden min-h-0">
           {columns.map(col => (
             <div key={col.id} className="flex flex-col h-full bg-gray-50/50 rounded-2xl border border-gray-100 overflow-hidden">
-              {/* Column Header */}
               <div className="p-4 flex items-center justify-between border-b border-gray-100 bg-white/50 backdrop-blur-sm">
                 <div className="flex items-center gap-2">
                   <div className={cn("px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider", col.color)}>
@@ -69,7 +126,6 @@ export function ProjectsPage() {
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
-              {/* Column Content */}
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {projects.filter(p => p.status === col.id).map(project => (
                   <Card

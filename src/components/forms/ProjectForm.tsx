@@ -5,31 +5,36 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Project, Client } from '@shared/types';
-import { Loader2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Loader2, Calendar as CalendarIcon } from 'lucide-react';
+import { Client, ProjectStatus } from '@shared/types';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 const projectSchema = z.object({
-  title: z.string().min(3, { message: "Project title is required." }),
-  clientId: z.string().min(1, { message: "Please select a client." }),
+  title: z.string().min(3, { message: "Title must be at least 3 characters." }),
+  clientId: z.string({ required_error: "Please select a client." }),
   status: z.enum(['todo', 'in-progress', 'done']),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
   description: z.string().optional(),
+  dueDate: z.date().optional(),
 });
 type ProjectFormValues = z.infer<typeof projectSchema>;
 interface ProjectFormProps {
-  project?: Project;
   clients: Client[];
-  onSubmit: (data: ProjectFormValues) => Promise<void>;
+  onSubmit: (data: ProjectFormValues) => void;
   isSubmitting: boolean;
+  defaultValues?: Partial<ProjectFormValues>;
 }
-export function ProjectForm({ project, clients, onSubmit, isSubmitting }: ProjectFormProps) {
+export function ProjectForm({ clients, onSubmit, isSubmitting, defaultValues }: ProjectFormProps) {
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
-    defaultValues: {
-      title: project?.title || '',
-      clientId: project?.clientId || '',
-      status: project?.status || 'todo',
-      description: project?.description || '',
+    defaultValues: defaultValues || {
+      title: "",
+      status: "todo",
+      priority: "medium",
     },
   });
   return (
@@ -42,7 +47,7 @@ export function ProjectForm({ project, clients, onSubmit, isSubmitting }: Projec
             <FormItem>
               <FormLabel>Project Title</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. Q4 Marketing Campaign" {...field} />
+                <Input placeholder="e.g., Q4 Marketing Campaign" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -74,49 +79,89 @@ export function ProjectForm({ project, clients, onSubmit, isSubmitting }: Projec
         />
         <FormField
           control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select project status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="todo">To Do</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="done">Done</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="description"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder="Provide a brief overview of the project..."
-                  className="resize-none"
-                  {...field}
-                />
+                <Textarea placeholder="Briefly describe the project goals..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {project ? 'Save Changes' : 'Create Project'}
-          </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="dueDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Due Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating Project...
+            </>
+          ) : (
+            'Create Project'
+          )}
+        </Button>
       </form>
     </Form>
   );
