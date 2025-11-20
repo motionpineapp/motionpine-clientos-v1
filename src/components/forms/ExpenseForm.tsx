@@ -12,13 +12,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
-  cost: z.preprocess(
-    (val) => {
-      const processed = parseFloat(String(val));
-      return isNaN(processed) ? undefined : processed;
-    },
-    z.number({ required_error: "Cost is required." }).positive({ message: "Cost must be a positive number." })
-  ),
+  cost: z.coerce.number().positive({ message: "Cost must be a positive number." }),
   date: z.date(),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),

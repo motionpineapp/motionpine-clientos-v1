@@ -10,4 +10,10 @@ export const clientService = {
       body: JSON.stringify(clientData),
     });
   },
+  updateClient: async (clientId: string, clientData: Partial<Client>): Promise<Client> => {
+    return api<Client>(`/api/clients/${clientId}`, {
+      method: 'PUT',
+      body: JSON.stringify(clientData),
+    });
+  },
 };

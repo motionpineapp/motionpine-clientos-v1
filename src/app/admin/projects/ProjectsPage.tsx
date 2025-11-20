@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { projectService } from '@/services/projects';
 import { clientService } from '@/services/clients';
 import { Project, ProjectStatus, Client } from '@shared/types';
@@ -12,19 +13,26 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription
 } from '@/components/ui/dialog';
-import { Plus, Calendar, MoreHorizontal, Loader2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Plus, Calendar, MoreHorizontal, Loader2, Edit, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ProjectForm } from '@/components/forms/ProjectForm';
 export function ProjectsPage() {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   useEffect(() => {
     loadData();
   }, []);
@@ -44,35 +52,50 @@ export function ProjectsPage() {
       setIsLoading(false);
     }
   };
-  const handleAddProject = async (data: any) => {
+  const handleFormSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
       const selectedClient = clients.find(c => c.id === data.clientId);
-      if (!selectedClient) {
-        throw new Error("Client not found");
-      }
-      const newProjectData = {
+      if (!selectedClient) throw new Error("Client not found");
+      const projectData = {
         ...data,
         clientName: selectedClient.name,
-        createdAt: new Date().toISOString(),
         dueDate: data.dueDate?.toISOString(),
       };
-      await projectService.createProject(newProjectData);
-      toast.success('Project created successfully!');
+      if (selectedProject) {
+        await projectService.updateProject(selectedProject.id, projectData);
+        toast.success('Project updated successfully!');
+      } else {
+        await projectService.createProject({ ...projectData, createdAt: new Date().toISOString() });
+        toast.success('Project created successfully!');
+      }
       setIsModalOpen(false);
+      setSelectedProject(null);
       loadData();
     } catch (error) {
-      toast.error('Failed to create project.');
+      toast.error(`Failed to ${selectedProject ? 'update' : 'create'} project.`);
       console.error(error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+  const openModalForEdit = (project: Project) => {
+    setSelectedProject(project);
+    setIsModalOpen(true);
+  };
+  const openModalForCreate = () => {
+    setSelectedProject(null);
+    setIsModalOpen(true);
   };
   const columns: { id: ProjectStatus; label: string; color: string }[] = [
     { id: 'todo', label: 'To Do', color: 'bg-gray-100 text-gray-600' },
     { id: 'in-progress', label: 'In Progress', color: 'bg-blue-100 text-blue-600' },
     { id: 'done', label: 'Done', color: 'bg-green-100 text-green-600' }
   ];
+  const projectDefaultValues = selectedProject ? {
+    ...selectedProject,
+    dueDate: selectedProject.dueDate ? new Date(selectedProject.dueDate) : undefined,
+  } : undefined;
   return (
     <div className="space-y-6 animate-fade-in h-[calc(100vh-140px)] flex flex-col">
       <PageHeader
@@ -80,28 +103,27 @@ export function ProjectsPage() {
         description="Track active projects and tasks."
         className="mb-6 flex-none"
       >
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Project</DialogTitle>
-              <DialogDescription>
-                Fill in the details to start a new project.
-              </DialogDescription>
-            </DialogHeader>
-            <ProjectForm
-              clients={clients}
-              onSubmit={handleAddProject}
-              isSubmitting={isSubmitting}
-            />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={openModalForCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Project
+        </Button>
       </PageHeader>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedProject ? 'Edit Project' : 'Create New Project'}</DialogTitle>
+            <DialogDescription>
+              {selectedProject ? 'Update the details for this project.' : 'Fill in the details to start a new project.'}
+            </DialogDescription>
+          </DialogHeader>
+          <ProjectForm
+            clients={clients}
+            onSubmit={handleFormSubmit}
+            isSubmitting={isSubmitting}
+            defaultValues={projectDefaultValues}
+          />
+        </DialogContent>
+      </Dialog>
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
@@ -137,9 +159,21 @@ export function ProjectsPage() {
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-gray-50 text-muted-foreground border-gray-200">
                           {project.clientName}
                         </Badge>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2 -mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreHorizontal className="h-3 w-3" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2 -mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <MoreHorizontal className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(`/admin/projects/${project.id}`)}>
+                              <Eye className="mr-2 h-4 w-4" /> View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openModalForEdit(project)}>
+                              <Edit className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                       <div>
                         <h4 className="font-semibold text-gray-900 leading-tight mb-1">{project.title}</h4>

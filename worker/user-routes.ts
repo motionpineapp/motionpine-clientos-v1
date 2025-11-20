@@ -49,6 +49,26 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     await ClientEntity.create(c.env, newClient);
     return ok(c, newClient);
   });
+  app.get('/api/clients/:id', async (c) => {
+    const { id } = c.req.param();
+    const client = new ClientEntity(c.env, id);
+    if (!(await client.exists())) return notFound(c, 'Client not found');
+    return ok(c, await client.getState());
+  });
+  app.put('/api/clients/:id', async (c) => {
+    const { id } = c.req.param();
+    const clientData = await c.req.json<Partial<Client>>();
+    const client = new ClientEntity(c.env, id);
+    if (!(await client.exists())) return notFound(c, 'Client not found');
+    await client.patch(clientData);
+    return ok(c, await client.getState());
+  });
+  app.delete('/api/clients/:id', async (c) => {
+    const { id } = c.req.param();
+    const deleted = await ClientEntity.delete(c.env, id);
+    if (!deleted) return notFound(c, 'Client not found');
+    return ok(c, { id });
+  });
   // --- PROJECTS ---
   app.get('/api/projects', async (c) => {
     const projects = await ProjectEntity.list(c.env);
@@ -65,6 +85,26 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const newProject: Project = { id: uuidv4(), ...projectData };
     await ProjectEntity.create(c.env, newProject);
     return ok(c, newProject);
+  });
+  app.get('/api/projects/:id', async (c) => {
+    const { id } = c.req.param();
+    const project = new ProjectEntity(c.env, id);
+    if (!(await project.exists())) return notFound(c, 'Project not found');
+    return ok(c, await project.getState());
+  });
+  app.put('/api/projects/:id', async (c) => {
+    const { id } = c.req.param();
+    const projectData = await c.req.json<Partial<Project>>();
+    const project = new ProjectEntity(c.env, id);
+    if (!(await project.exists())) return notFound(c, 'Project not found');
+    await project.patch(projectData);
+    return ok(c, await project.getState());
+  });
+  app.delete('/api/projects/:id', async (c) => {
+    const { id } = c.req.param();
+    const deleted = await ProjectEntity.delete(c.env, id);
+    if (!deleted) return notFound(c, 'Project not found');
+    return ok(c, { id });
   });
   // --- CHAT ---
   app.get('/api/chats', async (c) => {

@@ -14,13 +14,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
-  price: z.preprocess(
-    (val) => {
-      const processed = parseFloat(String(val));
-      return isNaN(processed) ? undefined : processed;
-    },
-    z.number({ required_error: "Price is required." }).positive({ message: "Price must be a positive number." })
-  ),
+  price: z.coerce.number().positive({ message: "Price must be a positive number." }),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
   customStartDate: z.date().optional(),

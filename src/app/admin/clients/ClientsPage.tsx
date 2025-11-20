@@ -30,7 +30,7 @@ import {
 import { PageHeader } from '@/components/PageHeader';
 import { clientService } from '@/services/clients';
 import { Client } from '@shared/types';
-import { Search, MoreHorizontal, Plus, Filter, Loader2 } from 'lucide-react';
+import { Search, MoreHorizontal, Plus, Filter, Loader2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { ClientForm } from '@/components/forms/ClientForm';
 export function ClientsPage() {
@@ -39,6 +39,7 @@ export function ClientsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   useEffect(() => {
     loadClients();
   }, []);
@@ -54,25 +55,41 @@ export function ClientsPage() {
       setIsLoading(false);
     }
   };
-  const handleAddClient = async (data: any) => {
+  const handleFormSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
-      const newClientData = {
-        ...data,
-        joinedAt: new Date().toISOString(),
-        totalProjects: 0,
-        totalRevenue: 0,
-      };
-      await clientService.createClient(newClientData);
-      toast.success('Client created successfully!');
+      if (selectedClient) {
+        // Update existing client
+        await clientService.updateClient(selectedClient.id, data);
+        toast.success('Client updated successfully!');
+      } else {
+        // Create new client
+        const newClientData = {
+          ...data,
+          joinedAt: new Date().toISOString(),
+          totalProjects: 0,
+          totalRevenue: 0,
+        };
+        await clientService.createClient(newClientData);
+        toast.success('Client created successfully!');
+      }
       setIsModalOpen(false);
+      setSelectedClient(null);
       loadClients();
     } catch (error) {
-      toast.error('Failed to create client.');
+      toast.error(`Failed to ${selectedClient ? 'update' : 'create'} client.`);
       console.error(error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+  const openModalForEdit = (client: Client) => {
+    setSelectedClient(client);
+    setIsModalOpen(true);
+  };
+  const openModalForCreate = () => {
+    setSelectedClient(null);
+    setIsModalOpen(true);
   };
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -93,24 +110,26 @@ export function ClientsPage() {
         title="Clients"
         description="Manage your client relationships and accounts."
       >
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Client
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Client</DialogTitle>
-              <DialogDescription>
-                Enter the details for the new client account.
-              </DialogDescription>
-            </DialogHeader>
-            <ClientForm onSubmit={handleAddClient} isSubmitting={isSubmitting} />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={openModalForCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Client
+        </Button>
       </PageHeader>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{selectedClient ? 'Edit Client' : 'Add New Client'}</DialogTitle>
+            <DialogDescription>
+              {selectedClient ? 'Update the details for this client account.' : 'Enter the details for the new client account.'}
+            </DialogDescription>
+          </DialogHeader>
+          <ClientForm
+            onSubmit={handleFormSubmit}
+            isSubmitting={isSubmitting}
+            defaultValues={selectedClient || undefined}
+          />
+        </DialogContent>
+      </Dialog>
       {/* Filters & Search */}
       <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
         <div className="relative flex-1 max-w-md">
@@ -202,8 +221,9 @@ export function ClientsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => toast.info('Viewing details soon!')}>
-                          View Details
+                        <DropdownMenuItem onClick={() => openModalForEdit(client)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit Client
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           Message Client

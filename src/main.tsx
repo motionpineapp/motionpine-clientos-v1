@@ -17,6 +17,7 @@ import { AdminDashboard } from '@/app/admin/dashboard/AdminDashboard';
 import { ClientDashboard } from '@/app/client/dashboard/ClientDashboard';
 import { ClientsPage } from '@/app/admin/clients/ClientsPage';
 import { ProjectsPage } from '@/app/admin/projects/ProjectsPage';
+import { ProjectDetailPage } from '@/app/admin/projects/ProjectDetailPage';
 import { ChatPage } from '@/app/admin/chat/ChatPage';
 import { ExpensesPage } from '@/app/admin/expenses/ExpensesPage';
 import { TeamsPage } from '@/app/admin/teams/TeamsPage';
@@ -48,6 +49,7 @@ const router = createBrowserRouter([
       { path: "dashboard", element: <AdminDashboard /> },
       { path: "clients", element: <ClientsPage /> },
       { path: "projects", element: <ProjectsPage /> },
+      { path: "projects/:id", element: <ProjectDetailPage /> },
       { path: "chat", element: <ChatPage /> },
       { path: "expenses", element: <ExpensesPage /> },
       { path: "teams", element: <TeamsPage /> },
