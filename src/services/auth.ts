@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { api } from '@/lib/api-client';
 import { User as SharedUser } from '@shared/types';
 export type UserRole = 'admin' | 'client';
-export interface User extends SharedUser {}
+export type User = SharedUser;
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;

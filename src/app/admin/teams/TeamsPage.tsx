@@ -18,7 +18,7 @@ export function TeamsPage() {
     try {
       setIsLoading(true);
       const data = await teamService.getTeamMembers();
-      setMembers(data);
+      setMembers(data.items);
     } catch (error) {
       toast.error('Failed to load team members');
     } finally {

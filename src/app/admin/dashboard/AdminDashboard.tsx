@@ -35,9 +35,9 @@ export function AdminDashboard() {
           projectService.getProjects(),
           chatService.getChats()
         ]);
-        setClients(clientsData);
-        setProjects(projectsData);
-        setChats(chatsData);
+        setClients(clientsData.items);
+        setProjects(projectsData.items);
+        setChats(chatsData.items);
       } catch (error) {
         console.error('Failed to load dashboard data', error);
       } finally {

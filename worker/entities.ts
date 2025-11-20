@@ -25,7 +25,7 @@ interface UserWithPassword extends User {
 export class UserEntity extends IndexedEntity<UserWithPassword> {
   static readonly entityName = 'user';
   static readonly indexName = 'users';
-  static override keyOf(state: UserWithPassword) {
+  static override keyOf(state: { email?: string }) {
     return state.email!;
   }
   static readonly initialState: UserWithPassword = { id: '', name: '', email: '' };

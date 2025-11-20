@@ -35,7 +35,7 @@ export function ClientsPage() {
     try {
       setIsLoading(true);
       const data = await clientService.getClients();
-      setClients(data);
+      setClients(data.items);
     } catch (error) {
       toast.error('Failed to load clients');
       console.error(error);

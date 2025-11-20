@@ -80,6 +80,22 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const chat = allChats.find(ch => ch.clientId === clientId);
     return chat ? ok(c, chat) : notFound(c);
   });
+  app.post('/api/chats/for-client', async (c) => {
+    const { clientId } = await c.req.json();
+    if (!isStr(clientId)) return bad(c, 'clientId is required');
+    const client = await new ClientEntity(c.env, clientId).getState();
+    if (!client) return notFound(c, 'Client not found');
+    const chatData = {
+      id: `chat-${clientId}`,
+      clientId: clientId,
+      title: client.name,
+      lastMessage: 'Chat created.',
+      lastMessageTs: Date.now(),
+      unreadCount: 0,
+    };
+    const newChat = await ChatEntity.create(c.env, chatData);
+    return ok(c, newChat);
+  });
   app.get('/api/chats/:id/messages', async (c) => {
     const { id } = c.req.param();
     const allMessages = (await ChatMessageEntity.list(c.env)).items;

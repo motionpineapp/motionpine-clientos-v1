@@ -19,7 +19,7 @@ export function ProjectsPage() {
     try {
       setIsLoading(true);
       const data = await projectService.getProjects();
-      setProjects(data);
+      setProjects(data.items);
     } catch (error) {
       toast.error('Failed to load projects');
       console.error(error);

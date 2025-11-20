@@ -16,23 +16,30 @@ export function ClientChatPage() {
   const [isSending, setIsSending] = useState(false);
   const initChat = useCallback(async () => {
     if (!currentUser) return;
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       // Try to find existing chat
-      let userChat = await chatService.getChatByClientId(currentUser.id);
-      // If no chat exists, create one
-      if (!userChat) {
-        userChat = await chatService.createChatForClient(currentUser.id);
-      }
+      const userChat = await chatService.getChatByClientId(currentUser.id);
       setChat(userChat);
-      // Load messages
       if (userChat) {
         const msgs = await chatService.getMessages(userChat.id);
         setMessages(msgs);
       }
     } catch (error) {
-      console.error('Chat initialization failed', error);
-      toast.error('Failed to connect to support chat');
+      // If chat not found, create one
+      if (error instanceof Error && error.message.includes('not found')) {
+        try {
+          const newChat = await chatService.createChatForClient(currentUser.id);
+          setChat(newChat);
+          setMessages([]); // New chat has no messages
+        } catch (createError) {
+          console.error('Chat creation failed', createError);
+          toast.error('Failed to create a support chat');
+        }
+      } else {
+        console.error('Chat initialization failed', error);
+        toast.error('Failed to connect to support chat');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -107,9 +114,9 @@ export function ClientChatPage() {
         </div>
       </div>
       {/* Messages Area */}
-      <ChatMessages 
-        messages={messages} 
-        currentUserId={currentUser?.id || ''} 
+      <ChatMessages
+        messages={messages}
+        currentUserId={currentUser?.id || ''}
         isLoading={false}
       />
       {/* Input Area */}

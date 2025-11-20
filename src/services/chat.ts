@@ -16,4 +16,10 @@ export const chatService = {
       body: JSON.stringify({ text, userId }),
     });
   },
+  createChatForClient: async (clientId: string): Promise<Chat> => {
+    return api('/api/chats/for-client', {
+      method: 'POST',
+      body: JSON.stringify({ clientId }),
+    });
+  },
 };

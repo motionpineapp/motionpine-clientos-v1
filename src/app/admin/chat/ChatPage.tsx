@@ -62,7 +62,7 @@ export function ChatPage() {
     try {
       setIsLoadingChats(true);
       const data = await chatService.getChats();
-      setChats(data);
+      setChats(data.items);
     } catch (error) {
       toast.error('Failed to load conversations');
     } finally {
@@ -110,7 +110,7 @@ export function ChatPage() {
       toast.error('Failed to send message');
     }
   };
-  const filteredChats = chats.filter(chat => 
+  const filteredChats = chats.filter(chat =>
     chat.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const selectedChat = chats.find(c => c.id === selectedChatId);
@@ -127,8 +127,8 @@ export function ChatPage() {
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search conversations..." 
+            <Input
+              placeholder="Search conversations..."
               className="pl-9 bg-white border-gray-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -223,9 +223,9 @@ export function ChatPage() {
               </div>
             </div>
             {/* Messages */}
-            <ChatMessages 
-              messages={messages} 
-              currentUserId={currentUser?.id || ''} 
+            <ChatMessages
+              messages={messages}
+              currentUserId={currentUser?.id || ''}
               isLoading={isLoadingMessages}
             />
             {/* Input */}

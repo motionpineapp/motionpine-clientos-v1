@@ -23,8 +23,8 @@ export function ExpensesPage() {
         expenseService.getExpenses(),
         expenseService.getSubscriptions()
       ]);
-      setExpenses(expensesData);
-      setSubscriptions(subsData);
+      setExpenses(expensesData.items);
+      setSubscriptions(subsData.items);
     } catch (error) {
       toast.error('Failed to load expenses');
     } finally {
