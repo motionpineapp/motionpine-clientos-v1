@@ -7,23 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription
-} from '@/components/ui/dialog';
 import { Plus, Download, Filter, Loader2, CreditCard, Server } from 'lucide-react';
 import { toast } from 'sonner';
-import { ExpenseForm } from '@/components/forms/ExpenseForm';
 export function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   useEffect(() => {
     loadData();
   }, []);
@@ -42,24 +31,6 @@ export function ExpensesPage() {
       setIsLoading(false);
     }
   };
-  const handleAddExpense = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      const newExpenseData = {
-        ...data,
-        date: data.date.toISOString(),
-      };
-      await expenseService.createExpense(newExpenseData);
-      toast.success('Expense added successfully!');
-      setIsModalOpen(false);
-      loadData();
-    } catch (error) {
-      toast.error('Failed to add expense.');
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
   const totalExpenses = expenses.reduce((acc, curr) => acc + curr.cost, 0);
   const monthlyRecurring = subscriptions
     .filter(s => s.status === 'active')
@@ -70,23 +41,10 @@ export function ExpensesPage() {
         title="Expenses & Infrastructure"
         description="Track office spending and recurring software subscriptions."
       >
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Expense
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Expense</DialogTitle>
-              <DialogDescription>
-                Log a new one-time purchase or expense.
-              </DialogDescription>
-            </DialogHeader>
-            <ExpenseForm onSubmit={handleAddExpense} isSubmitting={isSubmitting} />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => toast.info('This feature is coming soon!')}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Expense
+        </Button>
       </PageHeader>
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

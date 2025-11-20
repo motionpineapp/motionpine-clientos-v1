@@ -1,38 +1,34 @@
 import { create } from 'zustand';
-import { api } from '@/lib/api-client';
 import { User as SharedUser } from '@shared/types';
+import { MOCK_ADMIN_USER, MOCK_CLIENT_USER } from './mock-data';
 export type UserRole = 'admin' | 'client';
 export type User = SharedUser;
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<User>;
+  login: (role: UserRole) => Promise<User>;
   logout: () => void;
   checkSession: () => Promise<void>;
 }
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
-  isLoading: true, // Start with loading true for session check
-  login: async (email, password) => {
+  isLoading: true,
+  login: async (role: UserRole) => {
     set({ isLoading: true });
-    try {
-      const user = await api<User>('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
-      localStorage.setItem('motionpine_user', JSON.stringify(user));
-      set({
-        isAuthenticated: true,
-        user: user,
-        isLoading: false
-      });
-      return user;
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
-    }
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const user = role === 'admin' ? MOCK_ADMIN_USER : MOCK_CLIENT_USER;
+        localStorage.setItem('motionpine_user', JSON.stringify(user));
+        set({
+          isAuthenticated: true,
+          user: user,
+          isLoading: false
+        });
+        resolve(user);
+      }, 500);
+    });
   },
   logout: () => {
     localStorage.removeItem('motionpine_user');
@@ -44,7 +40,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (stored) {
       try {
         const user = JSON.parse(stored);
-        // Optional: verify session with backend here
         set({ user, isAuthenticated: true });
       } catch (e) {
         console.error('Failed to parse session', e);

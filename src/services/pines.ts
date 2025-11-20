@@ -1,10 +1,14 @@
 import { PineTransaction } from '@shared/types';
-import { api } from '@/lib/api-client';
+import { MOCK_PINE_TRANSACTIONS } from './mock-data';
 export const pineService = {
   getBalance: async (clientId: string): Promise<number> => {
-    return api(`/api/pines/balance/${clientId}`);
+    const balance = MOCK_PINE_TRANSACTIONS
+      .filter(tx => tx.clientId === clientId)
+      .reduce((acc, tx) => acc + tx.amount, 0);
+    return Promise.resolve(balance);
   },
   getTransactions: async (clientId: string): Promise<PineTransaction[]> => {
-    return api(`/api/pines/transactions/${clientId}`);
+    const transactions = MOCK_PINE_TRANSACTIONS.filter(tx => tx.clientId === clientId);
+    return Promise.resolve(transactions);
   },
 };

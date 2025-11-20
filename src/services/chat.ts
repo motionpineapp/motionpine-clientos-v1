@@ -1,25 +1,41 @@
 import { Chat, ChatMessage } from '@shared/types';
-import { api } from '@/lib/api-client';
+import { MOCK_CHATS, MOCK_MESSAGES } from './mock-data';
 export const chatService = {
   getChats: async (): Promise<{ items: Chat[] }> => {
-    return api('/api/chats');
+    return Promise.resolve({ items: MOCK_CHATS });
   },
   getChatByClientId: async (clientId: string): Promise<Chat> => {
-    return api(`/api/chats/client/${clientId}`);
+    const chat = MOCK_CHATS.find(c => c.clientId === clientId);
+    if (chat) {
+      return Promise.resolve(chat);
+    }
+    return Promise.reject(new Error('Chat not found'));
   },
   getMessages: async (chatId: string): Promise<ChatMessage[]> => {
-    return api(`/api/chats/${chatId}/messages`);
+    const messages = MOCK_MESSAGES.filter(m => m.chatId === chatId);
+    return Promise.resolve(messages);
   },
   sendMessage: async (chatId: string, text: string, userId: string): Promise<ChatMessage> => {
-    return api(`/api/chats/${chatId}/messages`, {
-      method: 'POST',
-      body: JSON.stringify({ text, userId }),
-    });
+    const newMessage: ChatMessage = {
+      id: `m${MOCK_MESSAGES.length + 1}`,
+      chatId,
+      userId,
+      text,
+      ts: Date.now(),
+    };
+    // In a real mock, you'd push this to an array
+    return Promise.resolve(newMessage);
   },
   createChatForClient: async (clientId: string): Promise<Chat> => {
-    return api('/api/chats/for-client', {
-      method: 'POST',
-      body: JSON.stringify({ clientId }),
-    });
+    const newChat: Chat = {
+      id: `chat-${clientId}`,
+      clientId,
+      title: `Client ${clientId}`,
+      lastMessage: 'Chat created.',
+      lastMessageTs: Date.now(),
+      unreadCount: 0,
+    };
+    // In a real mock, you'd push this to an array
+    return Promise.resolve(newChat);
   },
 };

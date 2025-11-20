@@ -1,22 +1,37 @@
 import { Client } from '@shared/types';
-import { api } from '@/lib/api-client';
+import { MOCK_CLIENTS } from './mock-data';
+let clients = [...MOCK_CLIENTS];
 export const clientService = {
   getClients: async (): Promise<{ items: Client[] }> => {
-    return api('/api/clients');
+    return Promise.resolve({ items: clients });
   },
   getClient: async (id: string): Promise<Client> => {
-    return api(`/api/clients/${id}`);
+    const client = clients.find(c => c.id === id);
+    if (client) {
+      return Promise.resolve(client);
+    }
+    return Promise.reject(new Error('Client not found'));
   },
   createClient: async (clientData: Omit<Client, 'id'>): Promise<Client> => {
-    return api('/api/clients', {
-      method: 'POST',
-      body: JSON.stringify(clientData),
-    });
+    const newClient: Client = {
+      id: `c${clients.length + 1}`,
+      ...clientData,
+    };
+    clients.push(newClient);
+    return Promise.resolve(newClient);
   },
   updateClient: async (id: string, clientData: Partial<Client>): Promise<Client> => {
-    return api(`/api/clients/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(clientData),
+    let updatedClient: Client | null = null;
+    clients = clients.map(c => {
+      if (c.id === id) {
+        updatedClient = { ...c, ...clientData };
+        return updatedClient;
+      }
+      return c;
     });
+    if (updatedClient) {
+      return Promise.resolve(updatedClient);
+    }
+    return Promise.reject(new Error('Client not found'));
   },
 };

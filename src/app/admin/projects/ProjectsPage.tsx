@@ -1,70 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { projectService } from '@/services/projects';
-import { clientService } from '@/services/clients';
-import { Project, ProjectStatus, Client } from '@shared/types';
+import { Project, ProjectStatus } from '@shared/types';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription
-} from '@/components/ui/dialog';
 import { Plus, Calendar, MoreHorizontal, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { ProjectForm } from '@/components/forms/ProjectForm';
 export function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   useEffect(() => {
-    loadData();
+    loadProjects();
   }, []);
-  const loadData = async () => {
+  const loadProjects = async () => {
     try {
       setIsLoading(true);
-      const [projectsData, clientsData] = await Promise.all([
-        projectService.getProjects(),
-        clientService.getClients()
-      ]);
-      setProjects(projectsData.items);
-      setClients(clientsData.items);
+      const data = await projectService.getProjects();
+      setProjects(data.items);
     } catch (error) {
-      toast.error('Failed to load projects or clients');
+      toast.error('Failed to load projects');
       console.error(error);
     } finally {
       setIsLoading(false);
-    }
-  };
-  const handleAddProject = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      const selectedClient = clients.find(c => c.id === data.clientId);
-      if (!selectedClient) {
-        throw new Error("Client not found");
-      }
-      const newProjectData = {
-        ...data,
-        clientName: selectedClient.name,
-        createdAt: new Date().toISOString(),
-      };
-      await projectService.createProject(newProjectData);
-      toast.success('Project created successfully!');
-      setIsModalOpen(false);
-      loadData(); // Reload both projects and clients
-    } catch (error) {
-      toast.error('Failed to create project.');
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
     }
   };
   const columns: { id: ProjectStatus; label: string; color: string }[] = [
@@ -79,27 +39,10 @@ export function ProjectsPage() {
         description="Track active projects and tasks."
         className="mb-6 flex-none"
       >
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Project</DialogTitle>
-              <DialogDescription>
-                Fill in the details to start a new project.
-              </DialogDescription>
-            </DialogHeader>
-            <ProjectForm
-              clients={clients}
-              onSubmit={handleAddProject}
-              isSubmitting={isSubmitting}
-            />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => toast.info('This feature is coming soon!')}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Project
+        </Button>
       </PageHeader>
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">

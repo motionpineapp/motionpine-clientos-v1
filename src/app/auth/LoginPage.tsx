@@ -1,40 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useAuthStore } from '@/services/auth';
+import { useAuthStore, UserRole } from '@/services/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(1, { message: "Password is required." }),
-});
-type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore(s => s.login);
-  const isLoading = useAuthStore(s => s.isLoading);
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-  const onSubmit = async (data: LoginFormValues) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<UserRole>('admin');
+  const handleLogin = async () => {
+    setIsLoading(true);
     try {
-      await login(data.email, data.password);
+      await login(activeTab);
       toast.success('Login successful! Redirecting...');
       navigate('/');
     } catch (error) {
-      toast.error('Login failed. Please check your credentials.');
+      toast.error('Login failed. Please try again.');
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
   return (
@@ -49,40 +36,22 @@ export function LoginPage() {
         </div>
         <Card className="border-gray-100 shadow-xl shadow-gray-200/50">
           <CardHeader>
-            <CardTitle>Welcome Back</CardTitle>
-            <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
+            <CardTitle>Select Your Role</CardTitle>
+            <CardDescription>Choose your role to access the appropriate dashboard.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email Address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="name@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <Tabs
+              defaultValue="admin"
+              className="w-full"
+              onValueChange={(value) => setActiveTab(value as UserRole)}
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="admin">Admin</TabsTrigger>
+                <TabsTrigger value="client">Client</TabsTrigger>
+              </TabsList>
+              <TabsContent value="admin" className="pt-6">
                 <Button
-                  type="submit"
+                  onClick={handleLogin}
                   className="w-full h-11 text-base"
                   disabled={isLoading}
                 >
@@ -92,11 +61,27 @@ export function LoginPage() {
                       Signing in...
                     </>
                   ) : (
-                    `Sign In`
+                    `Sign In as Admin`
                   )}
                 </Button>
-              </form>
-            </Form>
+              </TabsContent>
+              <TabsContent value="client" className="pt-6">
+                <Button
+                  onClick={handleLogin}
+                  className="w-full h-11 text-base"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    `Sign In as Client`
+                  )}
+                </Button>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
