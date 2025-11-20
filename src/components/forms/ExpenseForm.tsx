@@ -34,7 +34,7 @@ export function ExpenseForm({ expense, onSubmit, isSubmitting }: ExpenseFormProp
     resolver: zodResolver(expenseSchema),
     defaultValues: {
       item: expense?.item || '',
-      cost: expense?.cost || 0,
+      cost: expense?.cost,
       date: expense?.date ? new Date(expense.date) : new Date(),
       category: expense?.category || 'other',
     },
