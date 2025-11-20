@@ -31,6 +31,9 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       return notFound(c, 'Invalid credentials.');
     }
     const userAccount = await userInstance.getState();
+    if (!isStr(userAccount.passwordHash) || !userAccount.passwordHash.includes('.')) {
+      return bad(c, 'User account is corrupted or password is not set.');
+    }
     const isPasswordValid = await verifyPassword(password, userAccount.passwordHash);
     if (!isPasswordValid) {
       return bad(c, 'Invalid credentials.');
