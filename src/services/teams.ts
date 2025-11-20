@@ -1,14 +1,13 @@
 import { TeamMember } from '@shared/types';
-import { MOCK_TEAM } from './mock-data';
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import { api } from '@/lib/api-client';
 export const teamService = {
-  getTeamMembers: async (): Promise<TeamMember[]> => {
-    await delay(300);
-    return Promise.resolve(MOCK_TEAM);
+  getTeamMembers: async (): Promise<{ items: TeamMember[] }> => {
+    return api('/api/team');
   },
-  getTeamMember: async (id: string): Promise<TeamMember | undefined> => {
-    await delay(300);
-    const member = MOCK_TEAM.find(m => m.id === id);
-    return Promise.resolve(member);
+  createTeamMember: async (data: Omit<TeamMember, 'id'>): Promise<TeamMember> => {
+    return api('/api/team', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 };

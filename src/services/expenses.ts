@@ -1,13 +1,22 @@
 import { Expense, Subscription } from '@shared/types';
-import { MOCK_EXPENSES, MOCK_SUBSCRIPTIONS } from './mock-data';
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import { api } from '@/lib/api-client';
 export const expenseService = {
-  getExpenses: async (): Promise<Expense[]> => {
-    await delay(300);
-    return Promise.resolve(MOCK_EXPENSES);
+  getExpenses: async (): Promise<{ items: Expense[] }> => {
+    return api('/api/expenses');
   },
-  getSubscriptions: async (): Promise<Subscription[]> => {
-    await delay(300);
-    return Promise.resolve(MOCK_SUBSCRIPTIONS);
+  createExpense: async (data: Omit<Expense, 'id'>): Promise<Expense> => {
+    return api('/api/expenses', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  getSubscriptions: async (): Promise<{ items: Subscription[] }> => {
+    return api('/api/subscriptions');
+  },
+  createSubscription: async (data: Omit<Subscription, 'id'>): Promise<Subscription> => {
+    return api('/api/subscriptions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 };

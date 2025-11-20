@@ -1,14 +1,22 @@
-import { Client, ClientStatus } from '@shared/types';
-import { MOCK_CLIENTS } from './mock-data';
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import { Client } from '@shared/types';
+import { api } from '@/lib/api-client';
 export const clientService = {
-  getClients: async (): Promise<Client[]> => {
-    await delay(300);
-    return Promise.resolve(MOCK_CLIENTS);
+  getClients: async (): Promise<{ items: Client[] }> => {
+    return api('/api/clients');
   },
-  getClient: async (id: string): Promise<Client | undefined> => {
-    await delay(300);
-    const client = MOCK_CLIENTS.find(c => c.id === id);
-    return Promise.resolve(client);
+  getClient: async (id: string): Promise<Client> => {
+    return api(`/api/clients/${id}`);
+  },
+  createClient: async (clientData: Omit<Client, 'id'>): Promise<Client> => {
+    return api('/api/clients', {
+      method: 'POST',
+      body: JSON.stringify(clientData),
+    });
+  },
+  updateClient: async (id: string, clientData: Partial<Client>): Promise<Client> => {
+    return api(`/api/clients/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(clientData),
+    });
   },
 };

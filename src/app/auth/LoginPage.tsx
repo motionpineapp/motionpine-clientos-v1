@@ -1,23 +1,40 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore, UserRole } from '@/services/auth';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useAuthStore } from '@/services/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, User, Shield } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+const loginSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  password: z.string().min(1, { message: "Password is required." }),
+});
+type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore(s => s.login);
   const isLoading = useAuthStore(s => s.isLoading);
-  const [role, setRole] = useState<UserRole>('client');
-  const handleLogin = async () => {
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+  const onSubmit = async (data: LoginFormValues) => {
     try {
-      await login(role);
+      await login(data.email, data.password);
       toast.success('Login successful! Redirecting...');
       navigate('/');
     } catch (error) {
-      toast.error('Login failed. Please try again.');
+      toast.error('Login failed. Please check your credentials.');
+      console.error(error);
     }
   };
   return (
@@ -32,34 +49,54 @@ export function LoginPage() {
         </div>
         <Card className="border-gray-100 shadow-xl shadow-gray-200/50">
           <CardHeader>
-            <CardTitle>Select Your Role</CardTitle>
-            <CardDescription>Choose your role to access the correct dashboard.</CardDescription>
+            <CardTitle>Welcome Back</CardTitle>
+            <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="client" onValueChange={(value) => setRole(value as UserRole)}>
-              <TabsList className="grid w-full grid-cols-2 bg-gray-100 h-12 p-1">
-                <TabsTrigger value="client" className="h-full gap-2 text-base">
-                  <User className="h-4 w-4" /> Client
-                </TabsTrigger>
-                <TabsTrigger value="admin" className="h-full gap-2 text-base">
-                  <Shield className="h-4 w-4" /> Admin
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <Button
-              onClick={handleLogin}
-              className="w-full h-12 text-lg mt-6"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                `Sign In as ${role === 'admin' ? 'Admin' : 'Client'}`
-              )}
-            </Button>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="name@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  className="w-full h-11 text-base"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    `Sign In`
+                  )}
+                </Button>
+              </form>
+            </Form>
           </CardContent>
         </Card>
       </div>

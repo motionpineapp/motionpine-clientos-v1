@@ -1,28 +1,22 @@
-import { Project, ProjectStatus } from '@shared/types';
-import { MOCK_PROJECTS } from './mock-data';
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import { Project } from '@shared/types';
+import { api } from '@/lib/api-client';
 export const projectService = {
-  getProjects: async (): Promise<Project[]> => {
-    await delay(300);
-    return Promise.resolve(MOCK_PROJECTS);
-  },
-  getProject: async (id: string): Promise<Project | undefined> => {
-    await delay(300);
-    const project = MOCK_PROJECTS.find(p => p.id === id);
-    return Promise.resolve(project);
+  getProjects: async (): Promise<{ items: Project[] }> => {
+    return api('/api/projects');
   },
   getProjectsByClient: async (clientId: string): Promise<Project[]> => {
-    await delay(300);
-    const projects = MOCK_PROJECTS.filter(p => p.clientId === clientId);
-    return Promise.resolve(projects);
+    return api(`/api/clients/${clientId}/projects`);
   },
-  updateProjectStatus: async (id: string, status: ProjectStatus): Promise<Project | undefined> => {
-    await delay(300);
-    const project = MOCK_PROJECTS.find(p => p.id === id);
-    if (project) {
-      project.status = status;
-      return Promise.resolve(project);
-    }
-    return Promise.resolve(undefined);
+  createProject: async (projectData: Omit<Project, 'id'>): Promise<Project> => {
+    return api('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(projectData),
+    });
+  },
+  updateProject: async (id: string, projectData: Partial<Project>): Promise<Project> => {
+    return api(`/api/projects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(projectData),
+    });
   },
 };
