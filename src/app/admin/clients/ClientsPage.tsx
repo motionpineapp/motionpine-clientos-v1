@@ -19,15 +19,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription
+} from '@/components/ui/dialog';
 import { PageHeader } from '@/components/PageHeader';
 import { clientService } from '@/services/clients';
 import { Client } from '@shared/types';
 import { Search, MoreHorizontal, Plus, Filter, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ClientForm } from '@/components/forms/ClientForm';
 export function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   useEffect(() => {
     loadClients();
   }, []);
@@ -41,6 +52,26 @@ export function ClientsPage() {
       console.error(error);
     } finally {
       setIsLoading(false);
+    }
+  };
+  const handleAddClient = async (data: any) => {
+    setIsSubmitting(true);
+    try {
+      const newClientData = {
+        ...data,
+        joinedAt: new Date().toISOString(),
+        totalProjects: 0,
+        totalRevenue: 0,
+      };
+      await clientService.createClient(newClientData);
+      toast.success('Client created successfully!');
+      setIsModalOpen(false);
+      loadClients();
+    } catch (error) {
+      toast.error('Failed to create client.');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const filteredClients = clients.filter(client =>
@@ -62,10 +93,23 @@ export function ClientsPage() {
         title="Clients"
         description="Manage your client relationships and accounts."
       >
-        <Button onClick={() => toast.info('This feature is coming soon!')}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Client
-        </Button>
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Client
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Client</DialogTitle>
+              <DialogDescription>
+                Enter the details for the new client account.
+              </DialogDescription>
+            </DialogHeader>
+            <ClientForm onSubmit={handleAddClient} isSubmitting={isSubmitting} />
+          </DialogContent>
+        </Dialog>
       </PageHeader>
       {/* Filters & Search */}
       <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">

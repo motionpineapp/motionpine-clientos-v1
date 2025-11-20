@@ -1,92 +1,56 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { expenseService } from '@/services/expenses';
-import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
-const expenseFormSchema = z.object({
-  item: z.string().min(2, 'Item name must be at least 2 characters'),
-  // Use preprocess to handle string input from form safely
-  cost: z.preprocess(
-    (val) => (val === '' || val === undefined ? undefined : Number(val)),
-    z.number().min(0.01, 'Cost must be greater than 0')
-  ),
-  date: z.string().min(1, 'Date is required'),
-  assignedTo: z.string().min(2, 'Assigned person is required'),
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Expense } from '@shared/types';
+import { Loader2, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+const expenseSchema = z.object({
+  item: z.string().min(2, { message: "Item name is required." }),
+  cost: z.coerce.number().positive({ message: "Cost must be a positive number." }),
+  date: z.date({ required_error: "A purchase date is required." }),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
-type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
+type ExpenseFormValues = z.infer<typeof expenseSchema>;
 interface ExpenseFormProps {
-  onSuccess: () => void;
+  expense?: Expense;
+  onSubmit: (data: ExpenseFormValues) => Promise<void>;
+  isSubmitting: boolean;
 }
-export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export function ExpenseForm({ expense, onSubmit, isSubmitting }: ExpenseFormProps) {
   const form = useForm<ExpenseFormValues>({
-    resolver: zodResolver(expenseFormSchema),
+    resolver: zodResolver(expenseSchema),
     defaultValues: {
-      item: '',
-      // Use undefined for empty state so input doesn't show "0"
-      cost: undefined,
-      date: new Date().toISOString().split('T')[0],
-      assignedTo: '',
-      category: 'office',
+      item: expense?.item || '',
+      cost: expense?.cost || 0,
+      date: expense?.date ? new Date(expense.date) : new Date(),
+      category: expense?.category || 'other',
     },
   });
-  const onSubmit = useCallback(async (values: ExpenseFormValues) => {
-    setIsSubmitting(true);
-    try {
-      await expenseService.addExpense({
-        item: values.item,
-        cost: values.cost,
-        date: new Date(values.date).toISOString(),
-        assignedTo: values.assignedTo,
-        category: values.category,
-      });
-      toast.success('Expense added successfully');
-      form.reset();
-      onSuccess();
-    } catch (error) {
-      console.error('Failed to add expense:', error);
-      toast.error('Failed to add expense. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [form, onSuccess]);
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="item"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Item Name</FormLabel>
+              <FormLabel>Item / Service</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. Office Chairs" {...field} />
+                <Input placeholder="e.g. MacBook Pro M3" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="cost"
@@ -94,48 +58,22 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
               <FormItem>
                 <FormLabel>Cost ($)</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    {...field}
-                    // Handle undefined value for controlled input
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value)}
-                  />
+                  <Input type="number" placeholder="e.g. 2499.00" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="category"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <Select
-                  onValueChange={(value) => field.onChange(value as ExpenseFormValues['category'])}
-                  defaultValue={field.value}
-                >
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -149,24 +87,46 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="assignedTo"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Assigned To</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Alice Freeman" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
-        <div className="flex justify-end pt-2">
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Purchase Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-end pt-4">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Add Expense
+            {expense ? 'Save Changes' : 'Add Expense'}
           </Button>
         </div>
       </form>

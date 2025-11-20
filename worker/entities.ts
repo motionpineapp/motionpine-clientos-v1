@@ -25,7 +25,94 @@ interface UserWithPassword extends User {
 export class UserEntity extends IndexedEntity<UserWithPassword> {
   static readonly entityName = 'user';
   static readonly indexName = 'users';
-  static override keyOf(state: { email?: string }) {
+  static override keyOf(state: UserWithPassword) {
+    return state.email!;
+  }
+  static readonly initialState: UserWithPassword = { id: '', name: '', email: '' };
+  static readonly seedData: ReadonlyArray<UserWithPassword> = [
+    {
+      id: 'admin-1',
+      name: 'Sarah Jenkins',
+      email: 'admin@motionpine.com',
+      role: 'admin',
+      company: 'MotionPine Agency',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+      hashedPassword: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8' // 'password'
+    },
+    {
+      id: 'c1',
+      name: 'Alice Freeman',
+      email: 'client@motionpine.com',
+      role: 'client',
+      company: 'Acme Corp',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice',
+      hashedPassword: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8' // 'password'
+    }
+  ];
+}
+// Client Entity
+export class ClientEntity extends IndexedEntity<Client> {
+  static readonly entityName = 'client';
+  static readonly indexName = 'clients';
+  static readonly initialState: Client = { id: '', name: '', company: '', email: '', status: 'inactive', totalProjects: 0, totalRevenue: 0, joinedAt: '' };
+  static readonly seedData: ReadonlyArray<Client> = [
+    { id: 'c1', name: 'Alice Freeman', company: 'Acme Corp', email: 'alice@acme.com', status: 'active', totalProjects: 3, totalRevenue: 12500, joinedAt: '2023-01-15T00:00:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice' },
+    { id: 'c2', name: 'Bob Smith', company: 'TechStart Inc', email: 'bob@techstart.io', status: 'active', totalProjects: 1, totalRevenue: 4200, joinedAt: '2023-03-10T00:00:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob' },
+  ];
+}
+// Project Entity
+export class ProjectEntity extends IndexedEntity<Project> {
+  static readonly entityName = 'project';
+  static readonly indexName = 'projects';
+  static readonly initialState: Project = { id: '', title: '', clientId: '', clientName: '', status: 'todo', createdAt: '' };
+  static readonly seedData: ReadonlyArray<Project> = [
+    { id: 'p1', title: 'Website Redesign', clientId: 'c1', clientName: 'Acme Corp', status: 'in-progress', dueDate: '2023-12-01T00:00:00Z', createdAt: '2023-10-15T00:00:00Z', priority: 'high', description: 'Complete overhaul of the corporate website with new branding.' },
+    { id: 'p2', title: 'Q4 Marketing Campaign', clientId: 'c1', clientName: 'Acme Corp', status: 'todo', dueDate: '2023-11-20T00:00:00Z', createdAt: '2023-10-20T00:00:00Z', priority: 'medium', description: 'Social media assets and ad copy for Q4 push.' },
+  ];
+}
+// Chat Entity
+export class ChatEntity extends IndexedEntity<Chat> {
+  static readonly entityName = 'chat';
+  static readonly indexName = 'chats';
+  static readonly initialState: Chat = { id: '', title: '' };
+  static readonly seedData: ReadonlyArray<Chat> = [
+    { id: 'chat-c1', title: 'Alice Freeman', clientId: 'c1', lastMessage: 'Thanks for the update!', lastMessageTs: Date.now() - 300000, unreadCount: 2 },
+  ];
+}
+// Chat Message Entity
+export class ChatMessageEntity extends IndexedEntity<ChatMessage> {
+  static readonly entityName = 'chatMessage';
+  static readonly indexName = 'chatMessages';
+  static# Fixes a critical backend TypeScript error in the UserEntity.
+cat > worker/entities.ts << 'EOF'
+import { IndexedEntity } from './core-utils';
+import type {
+  User,
+  Client,
+  Project,
+  Chat,
+  ChatMessage,
+  Expense,
+  Subscription,
+  TeamMember,
+  PineTransaction
+} from '@shared/types';
+// --- UTILS ---
+export async function hashPassword(password: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+// --- ENTITIES ---
+// User Entity
+interface UserWithPassword extends User {
+  hashedPassword?: string;
+}
+export class UserEntity extends IndexedEntity<UserWithPassword> {
+  static readonly entityName = 'user';
+  static readonly indexName = 'users';
+  static override keyOf(state: UserWithPassword) {
     return state.email!;
   }
   static readonly initialState: UserWithPassword = { id: '', name: '', email: '' };
