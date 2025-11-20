@@ -22,6 +22,7 @@ import { useAuthStore } from '@/services/auth';
 import { projectService } from '@/services/projects';
 import { pineService } from '@/services/pines';
 import { Project } from '@shared/types';
+import { toast } from 'sonner';
 export function ClientDashboard() {
   const user = useAuthStore(s => s.user);
   const navigate = useNavigate();
@@ -68,7 +69,7 @@ export function ClientDashboard() {
       <div className="bento-grid">
         {/* --- TOP ROW --- */}
         {/* Project Intake Tile (Large) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-4 lg:col-span-8 min-h-[220px] bg-gradient-to-r from-primary to-gray-900 text-white border-none"
           title="Start a New Project"
           icon={<FileText className="size-5 text-white" />}
@@ -88,7 +89,7 @@ export function ClientDashboard() {
           </div>
         </BentoTile>
         {/* Pines / Credit Counter Tile (Medium) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-4 min-h-[220px]"
           title="Wallet"
           icon={<Wallet className="size-5" />}
@@ -103,7 +104,7 @@ export function ClientDashboard() {
                 <span className="text-muted-foreground">Last purchase</span>
                 <span className="font-medium">Oct 24, 2023</span>
               </div>
-              <Button variant="outline" className="w-full" onClick={() => navigate('/client/wallet')}>
+              <Button variant="outline" className="w-full" onClick={() => toast.info('Wallet feature coming soon!')}>
                 Top Up Balance
               </Button>
             </div>
@@ -111,7 +112,7 @@ export function ClientDashboard() {
         </BentoTile>
         {/* --- MIDDLE ROW --- */}
         {/* Instant Chat Tile (Large Vertical) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 min-h-[500px]"
           title="Support Chat"
           icon={<MessageSquare className="size-5" />}
@@ -159,7 +160,7 @@ export function ClientDashboard() {
           </div>
         </BentoTile>
         {/* Docs Tile (Small) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[240px]"
           title="Documents"
           icon={<File className="size-5" />}
@@ -187,7 +188,7 @@ export function ClientDashboard() {
           </div>
         </BentoTile>
         {/* Current Project Status Tile (Large) */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-6 min-h-[240px]"
           title={activeProject ? `Active: ${activeProject.title}` : "No Active Projects"}
           icon={<Clock className="size-5" />}
@@ -201,9 +202,9 @@ export function ClientDashboard() {
                     {activeProject.status === 'done' ? '100%' : activeProject.status === 'in-progress' ? '65%' : '10%'}
                   </span>
                 </div>
-                <Progress 
-                  value={activeProject.status === 'done' ? 100 : activeProject.status === 'in-progress' ? 65 : 10} 
-                  className="h-3" 
+                <Progress
+                  value={activeProject.status === 'done' ? 100 : activeProject.status === 'in-progress' ? 65 : 10}
+                  className="h-3"
                 />
               </div>
               <div className="grid grid-cols-3 gap-4">
@@ -235,7 +236,7 @@ export function ClientDashboard() {
         </BentoTile>
         {/* --- LOWER ROW --- */}
         {/* Frame.io Tile */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[160px]"
           noPadding
         >
@@ -247,7 +248,7 @@ export function ClientDashboard() {
           </div>
         </BentoTile>
         {/* Google Drive Tile */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
           noPadding
         >
@@ -259,7 +260,7 @@ export function ClientDashboard() {
           </div>
         </BentoTile>
         {/* Dropbox Tile */}
-        <BentoTile 
+        <BentoTile
           className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
           noPadding
         >
