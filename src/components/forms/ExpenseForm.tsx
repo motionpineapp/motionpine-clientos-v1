@@ -16,10 +16,7 @@ const categories = ['infrastructure', 'software', 'office', 'other'] as const;
 
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
-  cost: z.preprocess(
-    (val) => (val === "" ? undefined : String(val)),
-    z.string().transform(Number).pipe(z.number().positive({ message: "Cost must be a positive number." }))
-  ),
+  cost: z.coerce.number().positive({ message: "Cost must be a positive number." }),
   date: z.date().refine(date => date !== null && date !== undefined, {
     message: "A purchase date is required.",
   }),
@@ -38,7 +35,7 @@ export function ExpenseForm({ expense, onSubmit, isSubmitting }: ExpenseFormProp
       item: expense?.item || '',
       cost: expense?.cost,
       date: expense?.date ? new Date(expense.date) : new Date(),
-      category: expense?.category || 'other' as typeof categories[number],
+      category: expense?.category || 'other',
     },
   });
   return (
