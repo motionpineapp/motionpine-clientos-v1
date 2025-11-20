@@ -11,10 +11,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, addDays, addMonths } from 'date-fns';
+import { format } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
-  price: z.string().min(1, { message: "Price is required." }).transform(val => parseFloat(val)).pipe(z.number().positive({ message: "Price must be a positive number." })),
+  price: z.coerce.number().positive({ message: "Price must be a positive number." }),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
   customStartDate: z.date().optional(),
@@ -38,6 +38,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
     resolver: zodResolver(subscriptionSchema),
     defaultValues: defaultValues || {
       name: "",
+      price: undefined,
       billingCycle: "monthly",
       startDateOption: "today",
     },
@@ -67,7 +68,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
               <FormItem>
                 <FormLabel>Price ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="54.99" {...field} />
+                  <Input type="number" placeholder="54.99" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

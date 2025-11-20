@@ -12,29 +12,23 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
-  cost: z.string().min(1, { message: "Cost is required." })
-    .transform(val => parseFloat(val))
-    .pipe(z.number().positive({ message: "Cost must be a positive number." })),
+  cost: z.coerce.number().positive({ message: "Cost must be a positive number." }),
   date: z.date(),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
 type ExpenseFormValues = z.infer<typeof expenseSchema>;
-// The form will handle `cost` as a string, but the submitted value will be a number.
-type ExpenseFormInput = Omit<ExpenseFormValues, 'cost'> & {
-  cost: string | number;
-};
 interface ExpenseFormProps {
   onSubmit: (data: ExpenseFormValues) => void;
   isSubmitting: boolean;
-  defaultValues?: Partial<ExpenseFormInput>;
+  defaultValues?: Partial<ExpenseFormValues>;
 }
 export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFormProps) {
-  const form = useForm<ExpenseFormInput>({
+  const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseSchema),
     defaultValues: defaultValues || {
       item: "",
-      cost: "",
+      cost: undefined,
       date: new Date(),
       category: "other",
     },
@@ -63,7 +57,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
               <FormItem>
                 <FormLabel>Cost ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="2499.00" {...field} />
+                  <Input type="number" placeholder="2499.00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

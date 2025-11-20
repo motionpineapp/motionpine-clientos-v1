@@ -1,13 +1,12 @@
 import { create } from 'zustand';
 import { User as SharedUser } from '@shared/types';
-import { MOCK_ADMIN_USER, MOCK_CLIENT_USER } from './mock-data';
-export type UserRole = 'admin' | 'client';
+import { api } from '@/lib/api-client';
 export type User = SharedUser;
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (role: UserRole) => Promise<User>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => void;
   checkSession: () => Promise<void>;
 }
@@ -15,20 +14,24 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
-  login: async (role: UserRole) => {
+  login: async (email, password) => {
     set({ isLoading: true });
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const user = role === 'admin' ? MOCK_ADMIN_USER : MOCK_CLIENT_USER;
-        localStorage.setItem('motionpine_user', JSON.stringify(user));
-        set({
-          isAuthenticated: true,
-          user: user,
-          isLoading: false
-        });
-        resolve(user);
-      }, 500);
-    });
+    try {
+      const user = await api<User>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      localStorage.setItem('motionpine_user', JSON.stringify(user));
+      set({
+        isAuthenticated: true,
+        user: user,
+        isLoading: false
+      });
+      return user;
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
   },
   logout: () => {
     localStorage.removeItem('motionpine_user');

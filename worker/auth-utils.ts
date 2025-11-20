@@ -2,20 +2,19 @@
 const PBKDF2_ITERATIONS = 100000;
 const SALT_LENGTH = 16; // 128 bits
 const HASH_ALGORITHM = 'SHA-256';
- // Utility to convert ArrayBuffer or Uint8Array to hex string
-function bufferToHex(buffer: ArrayBuffer | Uint8Array): string {
-  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-  return Array.from(bytes)
+// Utility to convert ArrayBuffer to hex string
+function bufferToHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
 }
- // Utility to convert hex string to Uint8Array (ArrayBufferView)
-function hexToBuffer(hex: string): Uint8Array {
+// Utility to convert hex string to ArrayBuffer
+function hexToBuffer(hex: string): ArrayBuffer {
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < hex.length; i += 2) {
     bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
   }
-  return bytes;
+  return bytes.buffer;
 }
 /**
  * Hashes a password with a random salt.

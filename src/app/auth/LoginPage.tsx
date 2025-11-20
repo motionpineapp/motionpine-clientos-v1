@@ -1,27 +1,39 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore, UserRole } from '@/services/auth';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useAuthStore } from '@/services/auth';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+const loginSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  password: z.string().min(1, { message: "Password is required." }),
+});
+type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore(s => s.login);
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<UserRole>('admin');
-  const handleLogin = async () => {
-    setIsLoading(true);
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+  const { isSubmitting } = form.formState;
+  const onSubmit = async (data: LoginFormValues) => {
     try {
-      await login(activeTab);
+      await login(data.email, data.password);
       toast.success('Login successful! Redirecting...');
       navigate('/');
-    } catch (error) {
-      toast.error('Login failed. Please try again.');
+    } catch (error: any) {
+      toast.error(error.message || 'Login failed. Please check your credentials.');
       console.error(error);
-    } finally {
-      setIsLoading(false);
     }
   };
   return (
@@ -36,54 +48,56 @@ export function LoginPage() {
         </div>
         <Card className="border-gray-100 shadow-xl shadow-gray-200/50">
           <CardHeader>
-            <CardTitle>Select Your Role</CardTitle>
-            <CardDescription>Choose your role to access the appropriate dashboard.</CardDescription>
+            <CardTitle>Welcome Back</CardTitle>
+            <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs
-              defaultValue="admin"
-              className="w-full"
-              onValueChange={(value) => setActiveTab(value as UserRole)}
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="admin">Admin</TabsTrigger>
-                <TabsTrigger value="client">Client</TabsTrigger>
-              </TabsList>
-              <TabsContent value="admin" className="pt-6">
-                <Button
-                  onClick={handleLogin}
-                  className="w-full h-11 text-base"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="name@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full h-11 text-base" disabled={isSubmitting}>
+                  {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       Signing in...
                     </>
                   ) : (
-                    `Sign In as Admin`
+                    'Sign In'
                   )}
                 </Button>
-              </TabsContent>
-              <TabsContent value="client" className="pt-6">
-                <Button
-                  onClick={handleLogin}
-                  className="w-full h-11 text-base"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    `Sign In as Client`
-                  )}
-                </Button>
-              </TabsContent>
-            </Tabs>
+              </form>
+            </Form>
           </CardContent>
         </Card>
+        <div className="text-center text-sm text-muted-foreground">
+          <p>Admin: admin@motionpine.com / password</p>
+          <p>Client: client@motionpine.com / password</p>
+        </div>
       </div>
     </div>
   );

@@ -74,7 +74,7 @@ export function ExpensesPage() {
       const nextBillingDate = data.billingCycle === 'monthly'
         ? addMonths(startDate, 1)
         : addYears(startDate, 1);
-      const newSubscriptionData = {
+      const newSubscriptionData: Omit<Subscription, 'id'> = {
         name: data.name,
         price: data.price,
         billingCycle: data.billingCycle,
