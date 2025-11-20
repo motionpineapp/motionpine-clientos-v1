@@ -14,8 +14,13 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
-  cost: z.coerce.number().positive({ message: "Cost must be a positive number." }),
-  date: z.date({ required_error: "A purchase date is required." }),
+  cost: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.coerce.number().positive({ message: "Cost must be a positive number." })
+  ),
+  date: z.date().refine(date => date !== null && date !== undefined, {
+    message: "A purchase date is required.",
+  }),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
 type ExpenseFormValues = z.infer<typeof expenseSchema>;

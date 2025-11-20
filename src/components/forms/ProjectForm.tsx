@@ -11,7 +11,7 @@ import { Project, Client } from '@shared/types';
 import { Loader2 } from 'lucide-react';
 const projectSchema = z.object({
   title: z.string().min(3, { message: "Project title is required." }),
-  clientId: z.string({ required_error: "Please select a client." }),
+  clientId: z.string().min(1, { message: "Please select a client." }),
   status: z.enum(['todo', 'in-progress', 'done']),
   description: z.string().optional(),
 });
