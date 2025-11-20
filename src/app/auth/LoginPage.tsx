@@ -21,16 +21,8 @@ export function LoginPage() {
     }
     try {
       await login(email, password);
-      // Get the updated user state to determine redirection
-      const user = useAuthStore.getState().user;
-      if (user) {
-        toast.success(`Welcome back, ${user.role === 'admin' ? 'Admin' : 'Client'}!`);
-        if (user.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/client/dashboard');
-        }
-      }
+      toast.success('Login successful! Redirecting...');
+      navigate('/');
     } catch (error) {
       toast.error('Login failed. Please try again.');
     }
