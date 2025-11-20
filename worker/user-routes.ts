@@ -38,9 +38,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const { passwordHash, ...userData } = userAccount;
     return ok(c, userData as User);
   });
-
-
-
   // --- CLIENTS ---
   app.get('/api/clients', async (c) => {
     const clients = await ClientEntity.list(c.env);
@@ -75,11 +72,35 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, chats);
   });
   app.post('/api/chats', async (c) => {
-    const { clientId, clientName } = await c.req.json<{ clientId: string; clientName: string }>();
+    const { clientId } = await c.req.json<{ clientId: string }>();
+    if (!isStr(clientId)) {
+      return bad(c, 'Client ID is required.');
+    }
+    // Look up client name from ClientEntity
+    const clientInstance = new ClientEntity(c.env, clientId);
+    if (!(await clientInstance.exists())) {
+      // If client doesn't exist, try to find a user with that ID (for client-side self-chat creation)
+      const userInstance = new UserEntity(c.env, clientId); // Assuming client ID can be user email
+      if (!(await userInstance.exists())) {
+        return notFound(c, 'Associated client or user not found.');
+      }
+      const user = await userInstance.getState();
+      const newChat: Chat = {
+        id: `chat-${clientId}`,
+        clientId,
+        title: user.name,
+        lastMessage: 'Chat created.',
+        lastMessageTs: Date.now(),
+        unreadCount: 0,
+      };
+      await ChatEntity.create(c.env, newChat);
+      return ok(c, newChat);
+    }
+    const client = await clientInstance.getState();
     const newChat: Chat = {
       id: `chat-${clientId}`,
       clientId,
-      title: clientName,
+      title: client.name,
       lastMessage: 'Chat created.',
       lastMessageTs: Date.now(),
       unreadCount: 0,
@@ -104,7 +125,11 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   app.post('/api/chats/:chatId/messages', async (c) => {
     const { chatId } = c.req.param();
     const { text, userId } = await c.req.json<{ text: string; userId: string }>();
-    const user = await new UserEntity(c.env, userId).getState(); // Assuming user ID is email for lookup
+    const userInstance = new UserEntity(c.env, userId);
+    if (!(await userInstance.exists())) {
+      return notFound(c, 'Sending user not found');
+    }
+    const user = await userInstance.getState();
     const newMessage: ChatMessage = {
       id: uuidv4(),
       chatId,

@@ -1,4 +1,4 @@
-import { IndexedEntity } from './core-utils';
+import { IndexedEntity, Index } from './core-utils';
 import { hashPassword } from './auth-utils';
 import type {
   User,
@@ -22,7 +22,7 @@ export class UserEntity extends IndexedEntity<UserAccount> {
   }
   static readonly initialState: UserAccount = { id: '', name: '', email: '', passwordHash: '' };
   static async ensureSeed(env: any): Promise<void> {
-    const idx = new IndexedEntity.Index<string>(env, this.indexName);
+    const idx = new Index<string>(env, this.indexName);
     const ids = await idx.list();
     if (ids.length > 0) return;
     console.log('Seeding initial users...');
@@ -35,6 +35,15 @@ export class UserEntity extends IndexedEntity<UserAccount> {
       role: 'admin',
       company: 'MotionPine Agency',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+      passwordHash
+    },
+    {
+      id: 'admin-2',
+      name: 'Mike Ross',
+      email: 'admin2@motionpine.com',
+      role: 'admin',
+      company: 'MotionPine Agency',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike',
       passwordHash
     },
     {
