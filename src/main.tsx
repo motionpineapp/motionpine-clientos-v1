@@ -25,6 +25,7 @@ import { ClientProjectsPage } from '@/app/client/projects/ClientProjectsPage';
 import { ClientChatPage } from '@/app/client/chat/ClientChatPage';
 import { IntakePage } from '@/app/client/intake/IntakePage';
 import { ClientSettingsPage } from '@/app/client/settings/ClientSettingsPage';
+import { WalletPage } from '@/app/client/wallet/WalletPage';
 import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 const router = createBrowserRouter([
@@ -64,6 +65,7 @@ const router = createBrowserRouter([
       { path: "chat", element: <ClientChatPage /> },
       { path: "intake", element: <IntakePage /> },
       { path: "settings", element: <ClientSettingsPage /> },
+      { path: "wallet", element: <WalletPage /> },
     ]
   },
   // Fallback

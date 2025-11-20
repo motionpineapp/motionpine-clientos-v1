@@ -104,8 +104,8 @@ export function ClientDashboard() {
                 <span className="text-muted-foreground">Last purchase</span>
                 <span className="font-medium">Oct 24, 2023</span>
               </div>
-              <Button variant="outline" className="w-full" onClick={() => toast.info('Wallet feature coming soon!')}>
-                Top Up Balance
+              <Button variant="outline" className="w-full" onClick={() => navigate('/client/wallet')}>
+                View History
               </Button>
             </div>
           </div>

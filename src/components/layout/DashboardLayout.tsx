@@ -9,7 +9,8 @@ import {
   Settings,
   LogOut,
   FileText,
-  Menu
+  Menu,
+  Wallet
 } from 'lucide-react';
 import { useAuthStore } from '@/services/auth';
 import {
@@ -55,6 +56,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { icon: FolderKanban, label: 'Projects', href: '/client/projects' },
     { icon: MessageSquare, label: 'Chat', href: '/client/chat' },
     { icon: FileText, label: 'Intake', href: '/client/intake' },
+    { icon: Wallet, label: 'Wallet', href: '/client/wallet' },
     { icon: Settings, label: 'Settings', href: '/client/settings' },
   ];
   const links = isAdmin ? adminLinks : clientLinks;
