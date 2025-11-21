@@ -13,10 +13,7 @@ import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
-  cost: z.preprocess(
-    (val) => (String(val).trim() === '' ? undefined : Number(String(val).trim())),
-    z.number({ invalid_type_error: "Please enter a valid number." }).positive({ message: "Cost must be positive." })
-  ),
+  cost: z.coerce.number().positive({ message: "Cost must be a positive number." }),
   date: z.date({ required_error: "A purchase date is required." }),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
@@ -67,8 +64,6 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                     step="0.01"
                     placeholder="2499.00"
                     {...field}
-                    value={field.value?.toString() ?? ''}
-                    onChange={(e) => field.onChange(e.target.value)}
                   />
                 </FormControl>
                 <FormMessage />

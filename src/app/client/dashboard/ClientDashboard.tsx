@@ -24,6 +24,7 @@ import { pineService } from '@/services/pines';
 import { Project } from '@shared/types';
 import { toast } from 'sonner';
 export function ClientDashboard() {
+  // Hooks must be called at the top level, before any conditional returns.
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -31,7 +32,12 @@ export function ClientDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     const loadData = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        // This might happen briefly on load, but if it persists, there's an auth issue.
+        // We avoid calling services without a user ID.
+        setIsLoading(false);
+        return;
+      }
       try {
         const [projectsData, balanceData] = await Promise.all([
           projectService.getProjectsByClient(user.id),
@@ -49,6 +55,7 @@ export function ClientDashboard() {
     loadData();
   }, [user?.id]);
   const activeProject = projects.find(p => p.status === 'in-progress') || projects[0];
+  // The isLoading check is now performed *after* all hooks have been called.
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
