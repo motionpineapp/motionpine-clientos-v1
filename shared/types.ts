@@ -32,6 +32,7 @@ export interface ChatMessage {
 }
 // Client Management Types
 export type ClientStatus = 'active' | 'paused' | 'inactive';
+export type AccountStatus = 'pending' | 'setup_initiated' | 'active' | 'expired' | 'used';
 export interface Client {
   id: string;
   name: string;
@@ -44,6 +45,10 @@ export interface Client {
   joinedAt: string; // ISO Date string
   phone?: string;
   address?: string;
+  accountStatus?: AccountStatus;
+  magicToken?: string;
+  tokenExpiry?: number;
+  tokenUsedAt?: number;
 }
 // Project Management Types
 export type ProjectStatus = 'todo' | 'in-progress' | 'done';

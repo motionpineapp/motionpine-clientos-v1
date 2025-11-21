@@ -8,9 +8,10 @@ import {
   ExpenseEntity,
   SubscriptionEntity,
   TeamMemberEntity,
-  PineTransactionEntity
+  PineTransactionEntity,
+  UserAccount
 } from './entities';
-import { verifyPassword } from './auth-utils';
+import { verifyPassword, hashPassword } from './auth-utils';
 import { ok, bad, notFound, isStr, Env } from './core-utils';
 import type { User, Client, Project, Chat, ChatMessage, Expense, Subscription, TeamMember, PineTransaction } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -45,7 +46,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   app.post('/api/clients', async (c) => {
     const clientData = await c.req.json<Omit<Client, 'id'>>();
-    const newClient: Client = { id: uuidv4(), ...clientData };
+    const newClient: Client = { id: uuidv4(), accountStatus: 'pending', ...clientData };
     await ClientEntity.create(c.env, newClient);
     return ok(c, newClient);
   });
@@ -68,6 +69,55 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const deleted = await ClientEntity.delete(c.env, id);
     if (!deleted) return notFound(c, 'Client not found');
     return ok(c, { id });
+  });
+  // --- MAGIC LINK FLOW ---
+  app.post('/api/clients/:clientId/generate-magic-link', async (c) => {
+    const { clientId } = c.req.param();
+    const client = new ClientEntity(c.env, clientId);
+    if (!(await client.exists())) return notFound(c, 'Client not found');
+    const state = await client.getState();
+    if (state.accountStatus !== 'pending' && state.accountStatus !== 'expired') {
+      return bad(c, 'Client account is not in a state to generate a link.');
+    }
+    const token = await client.generateMagicToken();
+    const appUrl = 'https://app.motionpine.com'; // In a real app, this would be from env
+    return ok(c, { magicUrl: `${appUrl}/client/setup?token=${token}&clientId=${clientId}` });
+  });
+  app.get('/api/clients/:clientId/validate-magic-link', async (c) => {
+    const { clientId } = c.req.param();
+    const token = c.req.query('token');
+    if (!token) return bad(c, 'Token is required.');
+    const client = new ClientEntity(c.env, clientId);
+    if (!(await client.exists())) return notFound(c, 'Client not found');
+    const validation = await client.validateToken(token);
+    if (!validation.valid) return notFound(c, validation.reason);
+    const clientData = await client.getState();
+    const { magicToken, tokenExpiry, tokenUsedAt, ...safeClientData } = clientData;
+    return ok(c, safeClientData);
+  });
+  app.post('/api/clients/:clientId/complete-setup', async (c) => {
+    const { clientId } = c.req.param();
+    const { password, token } = await c.req.json<{ password: string, token: string }>();
+    if (!isStr(password) || !isStr(token)) return bad(c, 'Password and token are required.');
+    const client = new ClientEntity(c.env, clientId);
+    if (!(await client.exists())) return notFound(c, 'Client not found');
+    const validation = await client.validateToken(token);
+    if (!validation.valid) return bad(c, validation.reason);
+    const clientData = await client.getState();
+    const passwordHash = await hashPassword(password);
+    const newUserAccount: UserAccount = {
+      id: uuidv4(),
+      email: clientData.email,
+      name: clientData.name,
+      company: clientData.company,
+      role: 'client',
+      avatar: clientData.avatar,
+      passwordHash,
+    };
+    await UserEntity.create(c.env, newUserAccount);
+    await client.completeSetup();
+    const { passwordHash: _, ...safeUserData } = newUserAccount;
+    return ok(c, safeUserData as User);
   });
   // --- PROJECTS ---
   app.get('/api/projects', async (c) => {

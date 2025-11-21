@@ -9,8 +9,10 @@ import type {
   Expense,
   Subscription,
   TeamMember,
-  PineTransaction } from
-'@shared/types';
+  PineTransaction,
+  AccountStatus
+} from '@shared/types';
+import { v4 as uuidv4 } from 'uuid';
 export interface UserAccount extends User {
   passwordHash: string;
 }
@@ -63,7 +65,38 @@ export class UserEntity extends IndexedEntity<UserAccount> {
 export class ClientEntity extends IndexedEntity<Client> {
   static readonly entityName = 'client';
   static readonly indexName = 'clients';
-  static readonly initialState: Client = { id: '', name: '', company: '', email: '', status: 'inactive', totalProjects: 0, totalRevenue: 0, joinedAt: '' };
+  static readonly initialState: Client = { id: '', name: '', company: '', email: '', status: 'inactive', totalProjects: 0, totalRevenue: 0, joinedAt: '', accountStatus: 'pending' };
+  async generateMagicToken(): Promise<string> {
+    const token = uuidv4();
+    await this.mutate(s => ({
+      ...s,
+      magicToken: token,
+      tokenExpiry: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+      accountStatus: 'setup_initiated',
+      tokenUsedAt: undefined,
+    }));
+    return token;
+  }
+  async validateToken(token: string): Promise<{ valid: boolean; reason: string }> {
+    const state = await this.getState();
+    if (state.accountStatus !== 'setup_initiated') return { valid: false, reason: 'Invalid account state.' };
+    if (state.magicToken !== token) return { valid: false, reason: 'Token mismatch.' };
+    if (state.tokenUsedAt) return { valid: false, reason: 'Token has already been used.' };
+    if (state.tokenExpiry && Date.now() > state.tokenExpiry) {
+      await this.mutate(s => ({ ...s, accountStatus: 'expired' }));
+      return { valid: false, reason: 'Token has expired.' };
+    }
+    return { valid: true, reason: 'Token is valid.' };
+  }
+  async completeSetup(): Promise<void> {
+    await this.mutate(s => ({
+      ...s,
+      accountStatus: 'active',
+      tokenUsedAt: Date.now(),
+      magicToken: undefined,
+      tokenExpiry: undefined,
+    }));
+  }
 }
 export class ProjectEntity extends IndexedEntity<Project> {
   static readonly entityName = 'project';

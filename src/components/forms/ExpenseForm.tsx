@@ -17,13 +17,14 @@ const expenseSchema = z.object({
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
+type ExpenseFormValues = z.infer<typeof expenseSchema>;
 interface ExpenseFormProps {
-  onSubmit: (data: z.infer<typeof expenseSchema>) => void;
+  onSubmit: (data: ExpenseFormValues) => void;
   isSubmitting: boolean;
-  defaultValues?: Partial<z.infer<typeof expenseSchema>>;
+  defaultValues?: Partial<ExpenseFormValues>;
 }
 export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFormProps) {
-  const form = useForm<z.infer<typeof expenseSchema>>({
+  const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseSchema),
     defaultValues: defaultValues || {
       item: "",
