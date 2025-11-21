@@ -16,7 +16,7 @@ const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
     (val) => (typeof val === 'string' && val.trim() !== '' ? parseFloat(val) : (typeof val === 'number' ? val : undefined)),
-    z.number({ required_error: "Price is required." }).positive({ message: "Price must be a positive number." })
+    z.number({ invalid_type_error: "Please enter a valid number." }).positive({ message: "Price must be a positive number." })
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
@@ -76,8 +76,8 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                     step="0.01"
                     placeholder="54.99"
                     {...field}
-                    value={field.value?.toString() ?? ''}
-                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                    value={field.value === undefined ? '' : field.value}
+                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                   />
                 </FormControl>
                 <FormMessage />

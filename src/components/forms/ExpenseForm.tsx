@@ -15,7 +15,7 @@ const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
     (val) => (typeof val === 'string' && val.trim() !== '' ? parseFloat(val) : (typeof val === 'number' ? val : undefined)),
-    z.number({ required_error: "Cost is required." }).positive({ message: "Cost must be a positive number." })
+    z.number({ invalid_type_error: "Please enter a valid number." }).positive({ message: "Cost must be a positive number." })
   ),
   date: z.date({
     required_error: "A purchase date is required.",
@@ -69,8 +69,8 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                     step="0.01"
                     placeholder="2499.00"
                     {...field}
-                    value={field.value?.toString() ?? ''}
-                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                    value={field.value === undefined ? '' : field.value}
+                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                   />
                 </FormControl>
                 <FormMessage />
