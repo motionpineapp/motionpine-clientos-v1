@@ -14,7 +14,10 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
-  price: z.coerce.number().positive({ message: "Price must be a positive number." }),
+  price: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number({ invalid_type_error: "Price must be a number." }).positive({ message: "Price must be a positive number." })
+  ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
   customStartDate: z.date().optional(),
@@ -68,7 +71,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
               <FormItem>
                 <FormLabel>Price ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" placeholder="54.99" {...field} />
+                  <Input type="number" step="0.01" placeholder="54.99" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
