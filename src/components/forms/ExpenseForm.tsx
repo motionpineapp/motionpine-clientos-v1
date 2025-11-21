@@ -16,7 +16,6 @@ const expenseSchema = z.object({
   cost: z.preprocess(
     (val) => (String(val).trim() === '' ? undefined : Number(String(val).trim())),
     z.number({
-      required_error: "Cost is required.",
       invalid_type_error: "Please enter a valid number."
     }).positive({ message: "Cost must be a positive number." })
   ),

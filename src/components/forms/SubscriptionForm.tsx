@@ -17,7 +17,6 @@ const subscriptionSchema = z.object({
   price: z.preprocess(
     (val) => (String(val).trim() === '' ? undefined : Number(String(val).trim())),
     z.number({
-      required_error: "Price is required.",
       invalid_type_error: "Please enter a valid number."
     }).positive({ message: "Price must be a positive number." })
   ),
