@@ -24,7 +24,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription
 } from '@/components/ui/dialog';
 import { PageHeader } from '@/components/PageHeader';
@@ -40,9 +39,6 @@ export function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  useEffect(() => {
-    loadClients();
-  }, []);
   const loadClients = async () => {
     try {
       setIsLoading(true);
@@ -55,6 +51,9 @@ export function ClientsPage() {
       setIsLoading(false);
     }
   };
+  useEffect(() => {
+    loadClients();
+  }, []);
   const handleFormSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {

@@ -10,10 +10,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.coerce.number().positive({ message: "Cost must be a positive number." }),
-  date: z.date(),
+  date: z.date({ required_error: "A date is required." }),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
@@ -57,7 +58,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
               <FormItem>
                 <FormLabel>Cost ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="2499.00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
+                  <Input type="number" step="0.01" placeholder="2499.00" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -102,6 +103,29 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="infrastructure">Infrastructure</SelectItem>
+                  <SelectItem value="software">Software</SelectItem>
+                  <SelectItem value="office">Office Supplies</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="assignedTo"
