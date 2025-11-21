@@ -42,7 +42,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
   });
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 group">
         <FormField
           control={form.control}
           name="item"
@@ -69,7 +69,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                     step="0.01"
                     placeholder="2499.00"
                     {...field}
-                    value={field.value === undefined ? '' : field.value}
+                    value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                   />
                 </FormControl>
@@ -152,7 +152,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" className="w-full transition-shadow hover:shadow-lg" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -49,7 +49,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
   const startDateOption = form.watch('startDateOption');
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 group">
         <FormField
           control={form.control}
           name="name"
@@ -76,7 +76,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                     step="0.01"
                     placeholder="54.99"
                     {...field}
-                    value={field.value === undefined ? '' : field.value}
+                    value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                   />
                 </FormControl>
@@ -178,7 +178,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
             )}
           />
         )}
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" className="w-full transition-transform group-hover:scale-[1.02]" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
