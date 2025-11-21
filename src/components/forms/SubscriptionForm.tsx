@@ -15,12 +15,8 @@ import { format } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
-    (val) => {
-      if (val === '' || val === undefined || val === null) return undefined;
-      const n = Number(String(val).trim());
-      return Number.isNaN(n) ? undefined : n;
-    },
-    z.number().positive({ message: "Price must be a positive number." }).optional()
+    (val) => (String(val).trim() === '' ? undefined : Number(String(val).trim())),
+    z.number({ invalid_type_error: "Please enter a valid number." }).positive({ message: "Price must be positive." })
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
@@ -42,7 +38,7 @@ interface SubscriptionFormProps {
 }
 export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: SubscriptionFormProps) {
   const form = useForm<SubscriptionFormData>({
-    resolver: zodResolver(subscriptionSchema) as any,
+    resolver: zodResolver(subscriptionSchema),
     defaultValues: defaultValues || {
       name: "",
       price: undefined,
@@ -80,8 +76,8 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                     step="0.01"
                     placeholder="54.99"
                     {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                    value={field.value?.toString() ?? ''}
+                    onChange={(e) => field.onChange(e.target.value)}
                   />
                 </FormControl>
                 <FormMessage />

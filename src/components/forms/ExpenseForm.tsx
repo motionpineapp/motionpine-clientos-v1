@@ -14,21 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
-    (val) => {
-      if (val === undefined || val === null) return undefined;
-      const s = String(val).trim();
-      return s === '' ? undefined : Number(s);
-    },
-    z.number().positive({ message: "Cost must be a positive number." }).optional()
+    (val) => (String(val).trim() === '' ? undefined : Number(String(val).trim())),
+    z.number({ invalid_type_error: "Please enter a valid number." }).positive({ message: "Cost must be positive." })
   ),
-  date: z.preprocess(
-    (val) => {
-      if (val instanceof Date) return val;
-      if (typeof val === 'string' && val.trim() !== '') return new Date(val);
-      return undefined;
-    },
-    z.date().optional()
-  ),
+  date: z.date({ required_error: "A purchase date is required." }),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
@@ -40,7 +29,7 @@ interface ExpenseFormProps {
 }
 export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFormProps) {
   const form = useForm<ExpenseFormData>({
-    resolver: zodResolver(expenseSchema) as any,
+    resolver: zodResolver(expenseSchema),
     defaultValues: defaultValues || {
       item: "",
       cost: undefined,
@@ -78,8 +67,8 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                     step="0.01"
                     placeholder="2499.00"
                     {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                    value={field.value?.toString() ?? ''}
+                    onChange={(e) => field.onChange(e.target.value)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -161,7 +150,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full transition-shadow hover:shadow-lg" disabled={isSubmitting}>
+        <Button type="submit" className="w-full transition-shadow hover:group-hover:shadow-md" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

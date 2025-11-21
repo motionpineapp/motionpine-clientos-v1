@@ -64,12 +64,12 @@ export function ClientDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <div className="space-y-8 animate-fade-in">
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+        <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
           <div className="flex-1">
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">Welcome back, {user?.name?.split(' ')[0]}</h1>
             <p className="text-muted-foreground mt-1">Here's what's happening with your projects.</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 w-full lg:w-auto lg:max-w-2xl lg:ml-auto">
+          <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 w-full lg:w-auto lg:ml-auto">
             {/* Pines / Credit Counter Tile */}
             <BentoTile
               className="flex-1 min-h-[220px] group-hover:scale-105 transition-transform"
