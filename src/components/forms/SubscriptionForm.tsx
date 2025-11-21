@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
-    (val) => (typeof val === 'string' && val.trim() !== '' ? parseFloat(val) : (typeof val === 'number' ? val : undefined)),
+    (val) => (String(val).trim() === '' ? undefined : Number(val)),
     z.number({ invalid_type_error: "Please enter a valid number." }).positive({ message: "Price must be a positive number." })
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
@@ -77,7 +77,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                     placeholder="54.99"
                     {...field}
                     value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                    onChange={(e) => field.onChange(e.target.value)}
                   />
                 </FormControl>
                 <FormMessage />

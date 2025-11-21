@@ -64,53 +64,51 @@ export function ClientDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <div className="space-y-8 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div>
+        {/* --- TOP ROW REFACTORED --- */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex-1">
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">Welcome back, {user?.name?.split(' ')[0]}</h1>
             <p className="text-muted-foreground mt-1">Here's what's happening with your projects.</p>
           </div>
-        </div>
-        {/* --- TOP ROW REFACTORED --- */}
-        <div className="flex flex-col sm:flex-row gap-6">
-          {/* Pines / Credit Counter Tile */}
-          <BentoTile
-            className="flex-1 min-h-[220px] group-hover:scale-105 transition-transform"
-            title="Wallet"
-            icon={<Wallet className="size-5" />}
-          >
-            <div className="flex flex-col justify-between h-full py-2">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Available Pines</p>
-                <h2 className="text-5xl font-bold tracking-tighter text-primary">{pinesBalance.toLocaleString()}</h2>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Last purchase</span>
-                  <span className="font-medium">Oct 24, 2023</span>
+          <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 w-full lg:w-auto lg:max-w-2xl">
+            {/* Pines / Credit Counter Tile */}
+            <BentoTile
+              className="flex-1 min-h-[220px] group-hover:scale-105 transition-transform"
+              title="Wallet"
+              icon={<Wallet className="size-5" />}
+            >
+              <div className="flex flex-col justify-between h-full py-2">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Available Pines</p>
+                  <h2 className="text-5xl font-bold tracking-tighter text-primary">{pinesBalance.toLocaleString()}</h2>
                 </div>
-                <Button variant="outline" className="w-full" onClick={() => navigate('/client/wallet')}>
-                  View History
-                </Button>
+                <div className="space-y-3 mt-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Last purchase</span>
+                    <span className="font-medium">Oct 24, 2023</span>
+                  </div>
+                  <Button variant="outline" className="w-full" onClick={() => navigate('/client/wallet')}>
+                    View History
+                  </Button>
+                </div>
               </div>
-            </div>
-          </BentoTile>
-          {/* Project Intake Tile */}
-          <BentoTile
-            className="flex-1 min-h-[220px] bg-gradient-to-r from-white to-gray-50 text-foreground group-hover:scale-105 transition-transform"
-            title="Start a New Project"
-            icon={<FileText className="size-5 text-gray-700" />}
-          >
-            <div className="flex flex-col md:flex-row items-center justify-between h-full gap-6">
-              <div className="space-y-4 max-w-lg">
-                <p className="text-gray-700 text-lg">
-                  Ready to launch your next campaign? Fill out the intake form to get started immediately.
+            </BentoTile>
+            {/* Project Intake Tile */}
+            <BentoTile
+              className="flex-1 min-h-[220px] bg-gradient-to-r from-white to-gray-50 text-foreground group-hover:scale-105 transition-transform"
+              title="Start a New Project"
+              icon={<FileText className="size-5 text-gray-700" />}
+            >
+              <div className="flex flex-col justify-between h-full">
+                <p className="text-gray-700">
+                  Ready to launch your next campaign? Fill out the intake form to get started.
                 </p>
-                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" onClick={() => navigate('/client/intake')}>
+                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold mt-4 w-full" onClick={() => navigate('/client/intake')}>
                   Create Request
                 </Button>
               </div>
-            </div>
-          </BentoTile>
+            </BentoTile>
+          </div>
         </div>
         <div className="bento-grid">
           {/* --- MIDDLE ROW --- */}
