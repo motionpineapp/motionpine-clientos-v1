@@ -32,8 +32,12 @@ export function LoginPage() {
       toast.success('Login successful! Redirecting...');
       navigate('/');
     } catch (error: any) {
-      toast.error(error.message || 'Login failed. Please check your credentials.');
-      console.error(error);
+      console.warn('Login attempt failed:', { email: data.email, error: error.message });
+      if (error instanceof Error && (error.message.includes('Invalid credentials') || error.message.includes('not found'))) {
+        toast.error('Invalid email or password.');
+      } else {
+        toast.error('Login failed. Please try again later.');
+      }
     }
   };
   return (

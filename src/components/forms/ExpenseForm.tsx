@@ -14,8 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
-    (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
-    z.number({ invalid_type_error: "Cost must be a number." }).positive({ message: "Cost must be a positive number." })
+    (val) => Number(String(val)),
+    z.number().positive({ message: "Cost must be a positive number." })
   ),
   date: z.date({ required_error: "A purchase date is required." }),
   assignedTo: z.string().optional(),
@@ -32,7 +32,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
     resolver: zodResolver(expenseSchema),
     defaultValues: defaultValues || {
       item: "",
-      cost: undefined,
+      cost: 0,
       date: new Date(),
       category: "other",
       assignedTo: "",
@@ -67,8 +67,8 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                     step="0.01"
                     placeholder="2499.00"
                     {...field}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                    value={field.value?.toString() ?? ''}
                   />
                 </FormControl>
                 <FormMessage />

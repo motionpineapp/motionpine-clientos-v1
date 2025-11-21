@@ -1,4 +1,4 @@
-import { Client, User, AccountStatus } from '@shared/types';
+import { Client, User } from '@shared/types';
 import { api } from '@/lib/api-client';
 export const clientService = {
   getClients: async (): Promise<{ items: Client[] }> => {
@@ -24,9 +24,15 @@ export const clientService = {
   validateMagicLink: async (clientId: string, token: string): Promise<Client | null> => {
     try {
       return await api<Client>(`/api/clients/${clientId}/validate-magic-link?token=${token}`);
-    } catch (error) {
-      console.error("Magic link validation failed", error);
-      return null;
+    } catch (error: any) {
+      // Gracefully handle 404s for invalid/expired links
+      if (error.message.includes('not found') || error.message.includes('404')) {
+        console.warn('Magic link validation failed (invalid or expired):', { clientId, token: token.substring(0, 8) + '...' });
+        return null;
+      }
+      // Re-throw other errors
+      console.error("Magic link validation failed with an unexpected error", error);
+      throw error;
     }
   },
   completeSetup: async (clientId: string, token: string, password: string): Promise<User> => {

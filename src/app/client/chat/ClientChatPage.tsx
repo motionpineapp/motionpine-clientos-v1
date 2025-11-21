@@ -15,7 +15,11 @@ export function ClientChatPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const initChat = useCallback(async () => {
-    if (!currentUser) return;
+    if (!currentUser?.id) {
+      toast.error('User session missing. Please log in again.');
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       // Try to find existing chat
@@ -33,8 +37,8 @@ export function ClientChatPage() {
           setChat(newChat);
           setMessages([]); // New chat has no messages
         } catch (createError) {
-          console.error('Chat creation failed', createError);
-          toast.error('Failed to create a support chat');
+          console.warn('Client chat creation failed:', createError);
+          toast.error('Failed to create a support chat. Please try refreshing.');
         }
       } else {
         console.error('Chat initialization failed', error);

@@ -70,21 +70,21 @@ export function ClientDashboard() {
         {/* --- TOP ROW --- */}
         {/* Project Intake Tile (Large) */}
         <BentoTile
-          className="col-span-1 md:col-span-4 lg:col-span-8 min-h-[220px] bg-gradient-to-r from-primary to-gray-900 text-white border-none"
+          className="col-span-1 md:col-span-4 lg:col-span-8 min-h-[220px] bg-gradient-to-r from-white to-gray-50 text-foreground"
           title="Start a New Project"
-          icon={<FileText className="size-5 text-white" />}
+          icon={<FileText className="size-5 text-gray-700" />}
         >
           <div className="flex flex-col md:flex-row items-center justify-between h-full gap-6">
             <div className="space-y-4 max-w-lg">
-              <p className="text-gray-300 text-lg">
+              <p className="text-gray-700 text-lg">
                 Ready to launch your next campaign? Fill out the intake form to get started immediately.
               </p>
-              <Button size="lg" className="bg-white text-primary hover:bg-gray-100 border-none font-semibold" onClick={() => navigate('/client/intake')}>
+              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" onClick={() => navigate('/client/intake')}>
                 Create Request
               </Button>
             </div>
-            <div className="hidden md:block opacity-20">
-              <FileText className="size-32" />
+            <div className="hidden md:block opacity-10">
+              <FileText className="size-32 text-gray-400" />
             </div>
           </div>
         </BentoTile>
