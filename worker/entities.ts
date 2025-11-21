@@ -20,7 +20,7 @@ export class UserEntity extends IndexedEntity<UserAccount> {
   static readonly entityName = 'userAccount';
   static readonly indexName = 'userAccounts';
   static override keyOf(entity: Partial<UserAccount>) {
-    return entity.email!;
+    return entity.email!.toLowerCase();
   }
   static readonly initialState: UserAccount = { id: '', name: '', email: '', passwordHash: '' };
   static async ensureSeed(env: any): Promise<void> {

@@ -14,14 +14,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
-    (val) => (String(val).trim() === '' ? undefined : Number(String(val).trim())),
-    z.number({
-      invalid_type_error: "Please enter a valid number."
-    }).positive({ message: "Cost must be a positive number." })
+    (val) => {
+      if (val === undefined || val === null) return undefined;
+      const s = String(val).trim();
+      return s === '' ? undefined : Number(s);
+    },
+    z.number().positive({ message: "Cost must be a positive number." }).optional()
   ),
-  date: z.date({
-    required_error: "A purchase date is required.",
-  }),
+  date: z.preprocess(
+    (val) => {
+      if (val instanceof Date) return val;
+      if (typeof val === 'string' && val.trim() !== '') return new Date(val);
+      return undefined;
+    },
+    z.date().optional()
+  ),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
@@ -33,7 +40,7 @@ interface ExpenseFormProps {
 }
 export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFormProps) {
   const form = useForm<ExpenseFormData>({
-    resolver: zodResolver(expenseSchema),
+    resolver: zodResolver(expenseSchema) as any,
     defaultValues: defaultValues || {
       item: "",
       cost: undefined,

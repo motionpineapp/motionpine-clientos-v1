@@ -15,10 +15,12 @@ import { format } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
-    (val) => (String(val).trim() === '' ? undefined : Number(String(val).trim())),
-    z.number({
-      invalid_type_error: "Please enter a valid number."
-    }).positive({ message: "Price must be a positive number." })
+    (val) => {
+      if (val === '' || val === undefined || val === null) return undefined;
+      const n = Number(String(val).trim());
+      return Number.isNaN(n) ? undefined : n;
+    },
+    z.number().positive({ message: "Price must be a positive number." }).optional()
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
@@ -40,7 +42,7 @@ interface SubscriptionFormProps {
 }
 export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: SubscriptionFormProps) {
   const form = useForm<SubscriptionFormData>({
-    resolver: zodResolver(subscriptionSchema),
+    resolver: zodResolver(subscriptionSchema) as any,
     defaultValues: defaultValues || {
       name: "",
       price: undefined,
