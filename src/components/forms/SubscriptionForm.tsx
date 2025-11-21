@@ -173,7 +173,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
             )}
           />
         )}
-        <Button type="submit" className="w-full transition-transform group-hover:scale-[1.02]" disabled={isSubmitting}>
+        <Button type="submit" className="w-full transition-shadow hover:shadow-lg hover:shadow-primary/20" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -145,7 +145,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full transition-shadow hover:group-hover:shadow-md" disabled={isSubmitting}>
+        <Button type="submit" className="w-full transition-shadow hover:shadow-lg hover:shadow-primary/20" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
