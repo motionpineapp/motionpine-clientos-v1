@@ -103,7 +103,7 @@ export function ClientsPage() {
       default: return 'bg-gray-100 text-gray-700';
     }
   };
-  const getAccountStatusColor = (accountStatus: string) => {
+  const getAccountStatusColor = (accountStatus?: string) => {
     switch (accountStatus) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200';
@@ -213,8 +213,8 @@ export function ClientsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={getAccountStatusColor(client.accountStatus || '')}>
-                      {String(client.accountStatus || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    <Badge variant="outline" className={getAccountStatusColor(client.accountStatus)}>
+                      {String(client.accountStatus || 'N/A').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                     </Badge>
                   </TableCell>
                   <TableCell>
