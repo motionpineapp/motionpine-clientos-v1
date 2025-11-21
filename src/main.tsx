@@ -13,6 +13,7 @@ import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import '@/index.css'
 import { HomePage } from '@/pages/HomePage'
 import { LoginPage } from '@/app/auth/LoginPage';
+import SetupPage from '@/app/auth/SetupPage';
 import { AdminDashboard } from '@/app/admin/dashboard/AdminDashboard';
 import { ClientDashboard } from '@/app/client/dashboard/ClientDashboard';
 import { ClientsPage } from '@/app/admin/clients/ClientsPage';
@@ -38,6 +39,11 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/client/setup",
+    element: <SetupPage />,
     errorElement: <RouteErrorBoundary />,
   },
   // Admin Routes

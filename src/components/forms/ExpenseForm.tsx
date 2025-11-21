@@ -67,8 +67,8 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                     step="0.01"
                     placeholder="2499.00"
                     {...field}
-                    onChange={(e) => field.onChange(Number(e.target.value) || 0)}
-                    value={field.value || ''}
+                    onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                    value={field.value ?? ''}
                   />
                 </FormControl>
                 <FormMessage />

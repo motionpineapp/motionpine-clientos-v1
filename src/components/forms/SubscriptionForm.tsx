@@ -76,8 +76,8 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                     step="0.01"
                     placeholder="54.99"
                     {...field}
-                    onChange={(e) => field.onChange(Number(e.target.value) || 0)}
-                    value={field.value || ''}
+                    onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                    value={field.value ?? ''}
                   />
                 </FormControl>
                 <FormMessage />
