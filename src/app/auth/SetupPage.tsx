@@ -4,8 +4,10 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Loader2, Lock, AlertTriangle, Eye, EyeOff } from "lucide-react";
-import { clientService } from "@/services/clients";
+import { Loader2, Lock, AlertTriangle } from "lucide-react";
+import apiClient from "@/lib/api-client";
+import clientService from "@/services/clients";
+/* ShadCN UI components (pre-built in template) */
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,23 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+/**
+ * SetupPage
+ *
+ * Page responsible for validating a magic link token and allowing the client
+ * to set a password to complete account setup.
+ *
+ * URL query parameters:
+ *  - clientId
+ *  - token
+ *
+ * Flow:
+ *  - On mount, parse clientId & token from URL.
+ *  - Call clientService.validateMagicLink(clientId, token)
+ *  - If valid, show password form (with zod validation).
+ *  - On submit call clientService.completeSetup(clientId, token, password)
+ *  - On success redirect to /auth/login with a success toast.
+ */
 const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters")
@@ -39,12 +58,10 @@ const SetupPage: React.FC = () => {
   const navigate = useNavigate();
   const clientId = searchParams.get("clientId") ?? "";
   const token = searchParams.get("token") ?? "";
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
   const [clientName, setClientName] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [showPassword, setShowPassword] = useState(false);
   const form = useForm<SetupFormValues>({
     resolver: zodResolver(setupSchema),
     defaultValues: {
@@ -53,73 +70,111 @@ const SetupPage: React.FC = () => {
     },
   });
   useEffect(() => {
+    let mounted = true;
     const validate = async () => {
       if (!clientId || !token) {
         setIsTokenValid(false);
         setErrorMessage("Missing or invalid link. Please request a new setup link.");
-        setIsLoading(false);
         return;
       }
+      setIsLoading(true);
+      setErrorMessage("");
       try {
-        const client = await clientService.validateMagicLink(clientId, token);
-        if (client) {
-          setIsTokenValid(true);
-          setClientName(client.name);
-        } else {
-          setIsTokenValid(false);
-          setErrorMessage("This setup link is invalid or has expired. Request a new link.");
+        // Expectation: clientService.validateMagicLink returns something like:
+        // { valid: boolean, clientName?: string } or throws on error.
+        const res = await clientService.validateMagicLink(clientId, token);
+        // Defensive handling for multiple shapes
+        const valid = !!(res && (res.valid === true || res.isValid === true));
+        const name =
+          (res && (res.clientName || (res.client && res.client.name) || res.name)) || "";
+        if (mounted) {
+          setIsTokenValid(valid);
+          if (valid) {
+            setClientName(name || "");
+          } else {
+            setErrorMessage(
+              (res && (res.error || res.message)) ||
+                "This setup link is invalid or has expired. Request a new link."
+            );
+          }
         }
       } catch (err: any) {
-        setIsTokenValid(false);
-        setErrorMessage(err?.message || "An unexpected error occurred.");
+        console.error("validateMagicLink error:", err);
+        if (mounted) {
+          setIsTokenValid(false);
+          setErrorMessage(
+            err?.message || "An unexpected error occurred while validating the link."
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (mounted) setIsLoading(false);
       }
     };
     validate();
+    return () => {
+      mounted = false;
+    };
   }, [clientId, token]);
   const onSubmit = async (values: SetupFormValues) => {
-    setIsSubmitting(true);
+    if (!clientId || !token) {
+      setErrorMessage("Missing setup token. Please request a new link.");
+      return;
+    }
+    setIsLoading(true);
+    setErrorMessage("");
     try {
       await clientService.completeSetup(clientId, token, values.password);
-      toast.success("Account setup complete. Please log in.");
-      navigate("/login");
+      toast.success("Account setup complete. Please login.");
+      navigate("/auth/login");
     } catch (err: any) {
+      console.error("completeSetup error:", err);
       const msg = err?.message || "Failed to complete setup. Please try again.";
       setErrorMessage(msg);
       toast.error(msg);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50/50 p-4">
-      <div className="max-w-md w-full">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>Complete Account Setup</CardTitle>
-            <CardDescription>
-              {clientName ? `Welcome, ${clientName}. Create a password to secure your account.` : "Set a password to finish onboarding."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="animate-spin h-6 w-6 text-primary" />
-                <p className="ml-2 text-muted-foreground">Validating link...</p>
-              </div>
-            ) : !isTokenValid ? (
-              <div className="flex items-start gap-3 text-destructive-foreground bg-destructive/10 p-4 rounded-md border border-destructive/20">
-                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+    <div className="min-h-screen flex items-center justify-center bg-white p-6">
+      <Card className="w-full max-w-2xl shadow-lg rounded-xl overflow-hidden">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <Lock className="h-6 w-6 text-slate-700" />
+            <div>
+              <CardTitle>Complete account setup</CardTitle>
+              <CardDescription>
+                {clientName ? `Welcome, ${clientName}. Create a password to secure your account.` : "Set a password to finish onboarding."}
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading && isTokenValid === null ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="animate-spin mr-2 h-6 w-6" />
+            </div>
+          ) : isTokenValid === false ? (
+            <div className="py-8">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-red-600 mt-1" />
                 <div>
-                  <h3 className="font-semibold">Link Invalid or Expired</h3>
-                  <p className="text-sm mt-1">{errorMessage}</p>
-                  <Button asChild variant="link" className="p-0 h-auto mt-2 text-destructive-foreground/80">
-                    <Link to="/login">Return to Login</Link>
-                  </Button>
+                  <p className="font-medium text-red-700">Invalid or expired link</p>
+                  <p className="text-sm text-slate-600 mt-1">{errorMessage || "This link is no longer valid."}</p>
+                  <div className="mt-4">
+                    <Link to="/auth/login" className="text-sm text-sky-600 hover:underline">
+                      Return to login
+                    </Link>
+                    <span className="mx-2 text-slate-400">·</span>
+                    <Link to="/auth/forgot" className="text-sm text-sky-600 hover:underline">
+                      Request a new link
+                    </Link>
+                  </div>
                 </div>
               </div>
-            ) : (
+            </div>
+          ) : isTokenValid === true ? (
+            <>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField
@@ -127,26 +182,19 @@ const SetupPage: React.FC = () => {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>New Password</FormLabel>
+                        <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Input
-                              type={showPassword ? "text" : "password"}
-                              placeholder="••••••••"
-                              {...field}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
-                              onClick={() => setShowPassword(!showPassword)}
-                            >
-                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                          </div>
+                          <Input
+                            {...field}
+                            type="password"
+                            placeholder="Create a secure password"
+                            autoComplete="new-password"
+                          />
                         </FormControl>
                         <FormMessage />
+                        <p className="text-sm text-slate-500 mt-2">
+                          Minimum 8 characters, including uppercase, lowercase, number & special character.
+                        </p>
                       </FormItem>
                     )}
                   />
@@ -157,22 +205,47 @@ const SetupPage: React.FC = () => {
                       <FormItem>
                         <FormLabel>Confirm Password</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
+                          <Input
+                            {...field}
+                            type="password"
+                            placeholder="Repeat your password"
+                            autoComplete="new-password"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
-                    Set Password & Finish
-                  </Button>
+                  {errorMessage && (
+                    <div className="text-sm text-red-600">
+                      {errorMessage}
+                    </div>
+                  )}
+                  <CardFooter className="pt-0">
+                    <div className="flex items-center justify-between w-full gap-4">
+                      <Button
+                        type="submit"
+                        className="flex items-center gap-2"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : "Set Password"}
+                      </Button>
+                      <Link to="/auth/login" className="text-sm text-slate-600 hover:underline">
+                        Cancel
+                      </Link>
+                    </div>
+                  </CardFooter>
                 </form>
               </Form>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </>
+          ) : (
+            // Initial fallback (shouldn't normally appear because state handled above)
+            <div className="py-6">
+              <p className="text-slate-700">Preparing setup...</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

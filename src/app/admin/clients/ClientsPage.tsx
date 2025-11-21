@@ -103,6 +103,21 @@ export function ClientsPage() {
       default: return 'bg-gray-100 text-gray-700';
     }
   };
+
+  const getAccountStatusColor = (accountStatus: string) => {
+    switch (accountStatus) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200';
+      case 'setup_initiated':
+        return 'bg-sky-100 text-sky-700 hover:bg-sky-200 border-sky-200';
+      case 'active':
+        return 'bg-green-100 text-green-700 hover:bg-green-200 border-green-200';
+      case 'expired':
+        return 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
@@ -152,6 +167,7 @@ export function ClientsPage() {
             <TableRow>
               <TableHead className="w-[300px]">Client</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Account Status</TableHead>
               <TableHead>Projects</TableHead>
               <TableHead>Revenue</TableHead>
               <TableHead>Joined</TableHead>
@@ -161,7 +177,7 @@ export function ClientsPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center">
+                <TableCell colSpan={7} className="h-32 text-center">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <Loader2 className="h-5 w-5 animate-spin" />
                     Loading clients...
@@ -170,7 +186,7 @@ export function ClientsPage() {
               </TableRow>
             ) : filteredClients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                   No clients found matching your search.
                 </TableCell>
               </TableRow>
@@ -195,6 +211,11 @@ export function ClientsPage() {
                   <TableCell>
                     <Badge variant="outline" className={getStatusColor(client.status)}>
                       {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getAccountStatusColor(client.accountStatus || '')}>
+                      {String(client.accountStatus || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -227,6 +248,38 @@ export function ClientsPage() {
                         <DropdownMenuItem>
                           Message Client
                         </DropdownMenuItem>
+                        {['pending', 'expired'].includes(client.accountStatus || '') && (
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              try {
+                                const res = await clientService.generateMagicLink(client.id);
+                                const url = (res && (res.url || res)) || '';
+                                if (!url) {
+                                  toast.error('Failed to generate magic link.');
+                                  return;
+                                }
+                                toast.success('Magic link generated', {
+                                  action: {
+                                    label: 'Copy Link',
+                                    onClick: () => {
+                                      try {
+                                        navigator.clipboard.writeText(url);
+                                        toast.success('Copied link to clipboard');
+                                      } catch (err) {
+                                        toast.error('Failed to copy link');
+                                      }
+                                    }
+                                  }
+                                });
+                              } catch (error) {
+                                toast.error('Failed to generate magic link');
+                                console.error(error);
+                              }
+                            }}
+                          >
+                            Generate Magic Link
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">
                           Deactivate Client
