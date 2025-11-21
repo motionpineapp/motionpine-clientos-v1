@@ -24,7 +24,6 @@ import { pineService } from '@/services/pines';
 import { Project } from '@shared/types';
 import { toast } from 'sonner';
 export function ClientDashboard() {
-  // Hooks must be called at the top level, before any conditional returns.
   const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -33,8 +32,6 @@ export function ClientDashboard() {
   useEffect(() => {
     const loadData = async () => {
       if (!user?.id) {
-        // This might happen briefly on load, but if it persists, there's an auth issue.
-        // We avoid calling services without a user ID.
         setIsLoading(false);
         return;
       }
@@ -55,7 +52,6 @@ export function ClientDashboard() {
     loadData();
   }, [user?.id]);
   const activeProject = projects.find(p => p.status === 'in-progress') || projects[0];
-  // The isLoading check is now performed *after* all hooks have been called.
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
@@ -71,12 +67,12 @@ export function ClientDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <div className="space-y-8 animate-fade-in">
-        <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+        <div className="flex flex-col lg:flex-row gap-6 items-start justify-between w-full">
           <div className="flex-1">
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">Welcome back, {user?.name?.split(' ')[0]}</h1>
             <p className="text-muted-foreground mt-1">Here's what's happening with your projects.</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 w-full lg:w-auto lg:ml-auto">
+          <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 w-full lg:w-auto">
             {/* Pines / Credit Counter Tile */}
             <BentoTile
               className="flex-1 min-h-[220px] group-hover:scale-105 transition-transform"
@@ -119,7 +115,7 @@ export function ClientDashboard() {
         <div className="bento-grid">
           {/* Instant Chat Tile (Large Vertical) - Extended */}
           <BentoTile
-            className="col-span-1 md:col-span-4 lg:col-span-4 row-span-3 min-h-[600px]"
+            className="col-span-1 md:col-span-4 lg:col-span-4 lg:row-span-3 min-h-[600px]"
             title="Support Chat"
             icon={<MessageSquare className="size-5" />}
             noPadding
