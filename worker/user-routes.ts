@@ -80,8 +80,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       return bad(c, 'Client account is not in a state to generate a link.');
     }
     const token = await client.generateMagicToken();
-    const appUrl = 'https://app.motionpine.com'; // In a real app, this would be from env
-    return ok(c, { magicUrl: `${appUrl}/client/setup?token=${token}&clientId=${clientId}` });
+    return ok(c, { magicPath: `/client/setup?token=${token}&clientId=${clientId}` });
   });
   app.get('/api/clients/:clientId/validate-magic-link', async (c) => {
     const { clientId } = c.req.param();

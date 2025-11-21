@@ -15,8 +15,8 @@ import { format } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)),
-    z.number({ invalid_type_error: "Price must be a number." }).positive({ message: "Price must be a positive number." })
+    (val) => (val === "" || val === null || val === undefined ? 0 : Number(val)),
+    z.number().positive({ message: "Price must be a positive number." })
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
@@ -30,18 +30,18 @@ const subscriptionSchema = z.object({
   message: "Please select a custom start date.",
   path: ["customStartDate"],
 });
-type SubscriptionFormValues = z.infer<typeof subscriptionSchema>;
+type SubscriptionFormData = z.infer<typeof subscriptionSchema>;
 interface SubscriptionFormProps {
-  onSubmit: (data: SubscriptionFormValues) => void;
+  onSubmit: (data: SubscriptionFormData) => void;
   isSubmitting: boolean;
-  defaultValues?: Partial<SubscriptionFormValues>;
+  defaultValues?: Partial<SubscriptionFormData>;
 }
 export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: SubscriptionFormProps) {
-  const form = useForm<SubscriptionFormValues>({
+  const form = useForm<SubscriptionFormData>({
     resolver: zodResolver(subscriptionSchema),
     defaultValues: defaultValues || {
       name: "",
-      price: undefined,
+      price: 0,
       billingCycle: "monthly",
       startDateOption: "today",
     },
@@ -71,7 +71,14 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
               <FormItem>
                 <FormLabel>Price ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" placeholder="54.99" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="54.99"
+                    {...field}
+                    onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                    value={field.value || ''}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

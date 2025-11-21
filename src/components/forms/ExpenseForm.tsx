@@ -14,25 +14,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)),
-    z.number({ invalid_type_error: "Cost must be a number." }).positive({ message: "Cost must be a positive number." })
+    (val) => (val === "" || val === null || val === undefined ? 0 : Number(val)),
+    z.number().positive({ message: "Cost must be a positive number." })
   ),
-  date: z.date({ required_error: "A date is required." }),
+  date: z.date(),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
-type ExpenseFormValues = z.infer<typeof expenseSchema>;
+type ExpenseFormData = z.infer<typeof expenseSchema>;
 interface ExpenseFormProps {
-  onSubmit: (data: ExpenseFormValues) => void;
+  onSubmit: (data: ExpenseFormData) => void;
   isSubmitting: boolean;
-  defaultValues?: Partial<ExpenseFormValues>;
+  defaultValues?: Partial<ExpenseFormData>;
 }
 export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFormProps) {
-  const form = useForm<ExpenseFormValues>({
+  const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
     defaultValues: defaultValues || {
       item: "",
-      cost: undefined,
+      cost: 0,
       date: new Date(),
       category: "other",
       assignedTo: "",
@@ -62,7 +62,14 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
               <FormItem>
                 <FormLabel>Cost ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" placeholder="2499.00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="2499.00"
+                    {...field}
+                    onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                    value={field.value || ''}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

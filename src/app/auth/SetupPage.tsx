@@ -5,8 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Loader2, Lock, AlertTriangle } from "lucide-react";
-import apiClient from "@/lib/api-client";
-import clientService from "@/services/clients";
+import { api } from "@/lib/api-client";
+import { clientService } from "@/services/clients";
 /* ShadCN UI components (pre-built in template) */
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -80,22 +80,16 @@ const SetupPage: React.FC = () => {
       setIsLoading(true);
       setErrorMessage("");
       try {
-        // Expectation: clientService.validateMagicLink returns something like:
-        // { valid: boolean, clientName?: string } or throws on error.
-        const res = await clientService.validateMagicLink(clientId, token);
-        // Defensive handling for multiple shapes
-        const valid = !!(res && (res.valid === true || res.isValid === true));
-        const name =
-          (res && (res.clientName || (res.client && res.client.name) || res.name)) || "";
+        // Expectation: clientService.validateMagicLink returns a Client object or null.
+        const client = await clientService.validateMagicLink(clientId, token);
+        const valid = client !== null;
+        const name = client?.name || "";
         if (mounted) {
           setIsTokenValid(valid);
           if (valid) {
-            setClientName(name || "");
+            setClientName(name);
           } else {
-            setErrorMessage(
-              (res && (res.error || res.message)) ||
-                "This setup link is invalid or has expired. Request a new link."
-            );
+            setErrorMessage("This setup link is invalid or has expired. Request a new link.");
           }
         }
       } catch (err: any) {

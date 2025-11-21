@@ -103,7 +103,6 @@ export function ClientsPage() {
       default: return 'bg-gray-100 text-gray-700';
     }
   };
-
   const getAccountStatusColor = (accountStatus: string) => {
     switch (accountStatus) {
       case 'pending':
@@ -253,8 +252,8 @@ export function ClientsPage() {
                             onClick={async () => {
                               try {
                                 const res = await clientService.generateMagicLink(client.id);
-                                const url = (res && (res.url || res)) || '';
-                                if (!url) {
+                                const fullMagicUrl = window.location.origin + res.magicPath;
+                                if (!fullMagicUrl) {
                                   toast.error('Failed to generate magic link.');
                                   return;
                                 }
@@ -262,12 +261,9 @@ export function ClientsPage() {
                                   action: {
                                     label: 'Copy Link',
                                     onClick: () => {
-                                      try {
-                                        navigator.clipboard.writeText(url);
-                                        toast.success('Copied link to clipboard');
-                                      } catch (err) {
-                                        toast.error('Failed to copy link');
-                                      }
+                                      navigator.clipboard.writeText(fullMagicUrl)
+                                        .then(() => toast.success('Copied link to clipboard'))
+                                        .catch(() => toast.error('Failed to copy link'));
                                     }
                                   }
                                 });

@@ -16,8 +16,8 @@ export const clientService = {
       body: JSON.stringify(clientData),
     });
   },
-  generateMagicLink: async (clientId: string): Promise<{ magicUrl: string }> => {
-    return api<{ magicUrl: string }>(`/api/clients/${clientId}/generate-magic-link`, {
+  generateMagicLink: async (clientId: string): Promise<{ magicPath: string }> => {
+    return api<{ magicPath: string }>(`/api/clients/${clientId}/generate-magic-link`, {
       method: 'POST',
     });
   },
