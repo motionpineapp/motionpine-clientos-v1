@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
-  price: z.coerce.number({ invalid_type_error: "Please enter a valid number." }).positive({ message: "Price must be a positive number." }),
+  price: z.coerce.number().positive({ message: "Price must be a positive number." }),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
   customStartDate: z.date().optional(),
@@ -74,7 +74,8 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                       step="0.01"
                       placeholder="54.99"
                       {...field}
-                      onChange={event => field.onChange(event.target.valueAsNumber)}
+                      onChange={event => field.onChange(event.target.value === '' ? undefined : +event.target.value)}
+                      value={field.value ?? ''}
                     />
                   </FormControl>
                   <FormMessage />
@@ -115,25 +116,25 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                     defaultValue={field.value}
                     className="flex flex-col space-y-1"
                   >
-                    <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormItem className="flex items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-accent/50 transition-colors">
                       <FormControl>
                         <RadioGroupItem value="yesterday" />
                       </FormControl>
                       <FormLabel className="font-normal">Yesterday</FormLabel>
                     </FormItem>
-                    <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormItem className="flex items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-accent/50 transition-colors">
                       <FormControl>
                         <RadioGroupItem value="today" />
                       </FormControl>
                       <FormLabel className="font-normal">Today</FormLabel>
                     </FormItem>
-                    <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormItem className="flex items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-accent/50 transition-colors">
                       <FormControl>
                         <RadioGroupItem value="tomorrow" />
                       </FormControl>
                       <FormLabel className="font-normal">Tomorrow</FormLabel>
                     </FormItem>
-                    <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormItem className="flex items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-accent/50 transition-colors">
                       <FormControl>
                         <RadioGroupItem value="custom" />
                       </FormControl>

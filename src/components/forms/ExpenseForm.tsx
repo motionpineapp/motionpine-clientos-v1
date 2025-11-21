@@ -13,10 +13,8 @@ import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
-  cost: z.coerce.number({ invalid_type_error: "Please enter a valid number." }).positive({ message: "Cost must be a positive number." }),
-  date: z.date({
-    required_error: "A purchase date is required.",
-  }),
+  cost: z.coerce.number().positive({ message: "Cost must be a positive number." }),
+  date: z.date(),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
@@ -40,7 +38,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 group">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 group transition-shadow hover:shadow-md p-4 rounded-lg">
           <FormField
             control={form.control}
             name="item"
@@ -67,7 +65,8 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                       step="0.01"
                       placeholder="2499.00"
                       {...field}
-                      onChange={event => field.onChange(event.target.valueAsNumber)}
+                      onChange={event => field.onChange(event.target.value === '' ? undefined : +event.target.value)}
+                      value={field.value ?? ''}
                     />
                   </FormControl>
                   <FormMessage />
