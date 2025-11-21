@@ -70,31 +70,11 @@ export function ClientDashboard() {
             <p className="text-muted-foreground mt-1">Here's what's happening with your projects.</p>
           </div>
         </div>
-        <div className="bento-grid">
-          {/* --- TOP ROW --- */}
-          {/* Project Intake Tile (Large) */}
+        {/* --- TOP ROW REFACTORED --- */}
+        <div className="flex flex-col sm:flex-row gap-6">
+          {/* Pines / Credit Counter Tile */}
           <BentoTile
-            className="col-span-1 md:col-span-4 lg:col-span-8 min-h-[220px] bg-gradient-to-r from-white to-gray-50 text-foreground"
-            title="Start a New Project"
-            icon={<FileText className="size-5 text-gray-700" />}
-          >
-            <div className="flex flex-col md:flex-row items-center justify-between h-full gap-6">
-              <div className="space-y-4 max-w-lg">
-                <p className="text-gray-700 text-lg">
-                  Ready to launch your next campaign? Fill out the intake form to get started immediately.
-                </p>
-                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" onClick={() => navigate('/client/intake')}>
-                  Create Request
-                </Button>
-              </div>
-              <div className="hidden md:block opacity-10">
-                <FileText className="size-32 text-gray-400" />
-              </div>
-            </div>
-          </BentoTile>
-          {/* Pines / Credit Counter Tile (Medium) */}
-          <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-4 min-h-[220px]"
+            className="flex-1 min-h-[220px] group-hover:scale-105 transition-transform"
             title="Wallet"
             icon={<Wallet className="size-5" />}
           >
@@ -114,6 +94,25 @@ export function ClientDashboard() {
               </div>
             </div>
           </BentoTile>
+          {/* Project Intake Tile */}
+          <BentoTile
+            className="flex-1 min-h-[220px] bg-gradient-to-r from-white to-gray-50 text-foreground group-hover:scale-105 transition-transform"
+            title="Start a New Project"
+            icon={<FileText className="size-5 text-gray-700" />}
+          >
+            <div className="flex flex-col md:flex-row items-center justify-between h-full gap-6">
+              <div className="space-y-4 max-w-lg">
+                <p className="text-gray-700 text-lg">
+                  Ready to launch your next campaign? Fill out the intake form to get started immediately.
+                </p>
+                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" onClick={() => navigate('/client/intake')}>
+                  Create Request
+                </Button>
+              </div>
+            </div>
+          </BentoTile>
+        </div>
+        <div className="bento-grid">
           {/* --- MIDDLE ROW --- */}
           {/* Instant Chat Tile (Large Vertical) */}
           <BentoTile
@@ -239,7 +238,6 @@ export function ClientDashboard() {
             )}
           </BentoTile>
           {/* --- LOWER ROW --- */}
-          {/* Frame.io Tile */}
           <BentoTile
             className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[160px]"
             noPadding
@@ -251,7 +249,6 @@ export function ClientDashboard() {
               <span className="font-medium text-sm">Frame.io</span>
             </div>
           </BentoTile>
-          {/* Google Drive Tile */}
           <BentoTile
             className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
             noPadding
@@ -263,7 +260,6 @@ export function ClientDashboard() {
               <span className="font-medium text-sm">Google Drive</span>
             </div>
           </BentoTile>
-          {/* Dropbox Tile */}
           <BentoTile
             className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
             noPadding
