@@ -72,10 +72,10 @@ export function ClientDashboard() {
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">Welcome back, {user?.name?.split(' ')[0]}</h1>
             <p className="text-muted-foreground mt-1">Here's what's happening with your projects.</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 w-full lg:w-auto">
+          <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 w-full lg:w-auto lg:flex-grow">
             {/* Pines / Credit Counter Tile */}
             <BentoTile
-              className="flex-1 min-h-[220px] transition-all hover:shadow-md order-2 lg:order-1"
+              className="flex-1 min-h-[220px] transition-all hover:shadow-md order-2 lg:order-1 lg:flex-basis-[calc(50%-1rem)]"
               title="Wallet"
               icon={<Wallet className="size-5" />}
             >
@@ -97,7 +97,7 @@ export function ClientDashboard() {
             </BentoTile>
             {/* Project Intake Tile */}
             <BentoTile
-              className="flex-1 min-h-[220px] bg-gradient-to-r from-white to-gray-50 text-foreground transition-all hover:shadow-md order-1 lg:order-2"
+              className="flex-1 min-h-[220px] bg-gradient-to-r from-white to-gray-50 text-foreground transition-all hover:shadow-md order-1 lg:order-2 lg:flex-grow"
               title="Start a New Project"
               icon={<FileText className="size-5 text-gray-700" />}
             >
