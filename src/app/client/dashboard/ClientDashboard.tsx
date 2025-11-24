@@ -83,20 +83,16 @@ export function ClientDashboard() {
           <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto lg:flex-grow">
             {/* Pines / Credit Counter Tile */}
             <BentoTile
-              className="flex-1 min-h-[180px] transition-all hover:shadow-md order-2 lg:order-1 lg:flex-basis-[35%]"
+              className="flex-1 min-h-[180px] transition-all duration-200 hover:shadow-md order-2 lg:order-1 lg:flex-basis-[35%]"
               title="Wallet"
               icon={<Wallet className="size-5" />}
             >
-              <div className="flex flex-col justify-between h-full py-3 px-4">
+              <div className="flex flex-col justify-between h-full py-2 px-3">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Available Pines</p>
-                  <h2 className="text-4xl font-bold tracking-tighter text-primary">{pinesBalance.toLocaleString()}</h2>
+                  <p className="text-xs text-muted-foreground mb-1">Available Pines</p>
+                  <h2 className="text-3xl font-bold tracking-tighter text-primary">{pinesBalance.toLocaleString()}</h2>
                 </div>
                 <div className="space-y-2 mt-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Last purchase</span>
-                    <span className="font-medium">Oct 24, 2023</span>
-                  </div>
                   <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/client/wallet')}>
                     View History
                   </Button>
@@ -105,12 +101,12 @@ export function ClientDashboard() {
             </BentoTile>
             {/* Project Intake Tile */}
             <BentoTile
-              className="flex-1 min-h-[180px] bg-gradient-to-r from-white to-gray-50 text-foreground transition-all hover:shadow-md order-1 lg:order-2 lg:flex-grow"
+              className="flex-1 min-h-[180px] bg-gradient-to-r from-white to-gray-50 text-foreground transition-all duration-200 hover:shadow-md order-1 lg:order-2 lg:flex-grow"
               title="Start a New Project"
               icon={<FileText className="size-5 text-gray-700" />}
             >
               <div className="flex flex-col justify-between h-full">
-                <p className="text-gray-700 text-sm">
+                <p className="text-gray-600 text-xs leading-relaxed">
                   Ready to launch your next campaign? Fill out the intake form to get started.
                 </p>
                 <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold mt-3 w-full" onClick={() => navigate('/client/intake')}>
@@ -128,7 +124,7 @@ export function ClientDashboard() {
             icon={<MessageSquare className="size-5" />}
             noPadding
           >
-            <div className="flex h-full flex-col pt-0">
+            <div className="flex h-full flex-col">
               <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
                 <Avatar className="h-10 w-10 border border-white shadow-sm">
                   <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" />
