@@ -23,6 +23,7 @@ import { projectService } from '@/services/projects';
 import { pineService } from '@/services/pines';
 import { Project } from '@shared/types';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 export function ClientDashboard() {
   const user = useAuthStore(s => s.user);
   const navigate = useNavigate();
@@ -52,8 +53,6 @@ export function ClientDashboard() {
     };
     loadData();
   }, [user?.id]);
-  // Guard against rendering the main content if the user is not available yet.
-  // This must come AFTER all hook calls to comply with the Rules of Hooks.
   if (!user) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
@@ -79,16 +78,20 @@ export function ClientDashboard() {
   }
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
-      <div className="space-y-8 animate-fade-in">
+      <motion.div 
+        className="space-y-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="flex flex-col lg:flex-row gap-4 items-start justify-between w-full">
           <div className="flex-1">
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">Welcome back, {user?.name?.split(' ')[0]}</h1>
             <p className="text-muted-foreground mt-1">Here's what's happening with your projects.</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto lg:flex-grow">
-            {/* Pines / Credit Counter Tile */}
             <BentoTile
-              className="flex-1 min-h-[180px] transition-all duration-200 hover:shadow-md order-2 lg:order-1 lg:flex-basis-[35%]"
+              className="flex-1 min-h-[180px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 order-2 lg:order-1 lg:flex-basis-[35%]"
               title="Wallet"
               icon={<Wallet className="size-5" />}
             >
@@ -104,9 +107,8 @@ export function ClientDashboard() {
                 </div>
               </div>
             </BentoTile>
-            {/* Project Intake Tile */}
             <BentoTile
-              className="flex-1 min-h-[180px] bg-gradient-to-r from-white to-gray-50 text-foreground transition-all duration-200 hover:shadow-md order-1 lg:order-2 lg:flex-grow"
+              className="flex-1 min-h-[180px] bg-gradient-to-r from-white to-gray-50 text-foreground transition-all duration-300 hover:shadow-lg hover:-translate-y-1 order-1 lg:order-2 lg:flex-grow"
               title="Start a New Project"
               icon={<FileText className="size-5 text-gray-700" />}
             >
@@ -122,9 +124,8 @@ export function ClientDashboard() {
           </div>
         </div>
         <div className="bento-grid">
-          {/* Instant Chat Tile (Large Vertical) - Extended */}
           <BentoTile
-            className="col-span-1 md:col-span-4 lg:col-span-4 lg:row-span-4 min-h-[700px]"
+            className="col-span-1 md:col-span-4 lg:col-span-4 lg:row-span-4 min-h-[700px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Support Chat"
             icon={<MessageSquare className="size-5" />}
             noPadding
@@ -143,7 +144,7 @@ export function ClientDashboard() {
                   </p>
                 </div>
               </div>
-              <ScrollArea className="flex-1 p-4 bg-white">
+              <ScrollArea className="flex-1 p-4 bg-white" style={{ scrollBehavior: 'smooth' }}>
                 <div className="space-y-4">
                   <div className="flex gap-3 flex-row-reverse">
                     <div className="bg-primary text-white p-3 rounded-2xl rounded-tr-none text-sm max-w-[85%]">
@@ -170,9 +171,8 @@ export function ClientDashboard() {
               </div>
             </div>
           </BentoTile>
-          {/* Docs Tile (Small) */}
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[240px]"
+            className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[240px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Documents"
             icon={<File className="size-5" />}
           >
@@ -198,9 +198,8 @@ export function ClientDashboard() {
               <Button variant="ghost" size="sm" className="w-full text-muted-foreground">View All</Button>
             </div>
           </BentoTile>
-          {/* Current Project Status Tile (Large) */}
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-6 min-h-[240px]"
+            className="col-span-1 md:col-span-2 lg:col-span-6 min-h-[240px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title={activeProject ? `Active: ${activeProject.title}` : "No Active Projects"}
             icon={<Clock className="size-5" />}
           >
@@ -247,7 +246,7 @@ export function ClientDashboard() {
           </BentoTile>
           {/* --- LOWER ROW --- */}
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[160px]"
+            className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[160px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             noPadding
           >
             <div className="h-full flex flex-col items-center justify-center p-6 hover:bg-gray-50 transition-colors cursor-pointer gap-3">
@@ -258,7 +257,7 @@ export function ClientDashboard() {
             </div>
           </BentoTile>
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
+            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             noPadding
           >
             <div className="h-full flex flex-col items-center justify-center p-6 hover:bg-gray-50 transition-colors cursor-pointer gap-3">
@@ -269,7 +268,7 @@ export function ClientDashboard() {
             </div>
           </BentoTile>
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
+            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             noPadding
           >
             <div className="h-full flex flex-col items-center justify-center p-6 hover:bg-gray-50 transition-colors cursor-pointer gap-3">
@@ -280,7 +279,7 @@ export function ClientDashboard() {
             </div>
           </BentoTile>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

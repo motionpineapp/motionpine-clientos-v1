@@ -22,6 +22,7 @@ import { clientService } from '@/services/clients';
 import { projectService } from '@/services/projects';
 import { chatService } from '@/services/chat';
 import { Client, Project, Chat } from '@shared/types';
+import { Skeleton } from '@/components/ui/skeleton';
 export function AdminDashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -56,18 +57,6 @@ export function AdminDashboard() {
   const intakeRequests = projects?.filter(p => p.status === 'todo').slice(0, 2) || [];
   const recentClients = clients?.slice(0, 4) || [];
   const extraClients = Math.max(0, (clients?.length || 0) - 4);
-  if (isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Loading dashboard...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <div className="space-y-8 animate-fade-in">
@@ -76,40 +65,46 @@ export function AdminDashboard() {
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">Dashboard</h1>
             <p className="text-muted-foreground mt-1">Overview of your agency performance.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Last updated: Just now</span>
-          </div>
         </div>
         <div className="bento-grid">
           {/* --- TOP ROW --- */}
-          {/* Admin Overview Tile (Large) */}
           <BentoTile
-            className="col-span-1 md:col-span-4 lg:col-span-6 min-h-[200px]"
+            className="col-span-1 md:col-span-4 lg:col-span-6 min-h-[200px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Overview"
             icon={<Users className="size-5" />}
           >
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-full items-center">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Total Clients</p>
-                <p className="text-3xl font-bold">{totalClients}</p>
+            {isLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-full items-center">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-10 w-16" />
+                  </div>
+                ))}
               </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Active Projects</p>
-                <p className="text-3xl font-bold text-primary">{activeProjectsCount}</p>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-full items-center">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Total Clients</p>
+                  <p className="text-3xl font-bold">{totalClients}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Active Projects</p>
+                  <p className="text-3xl font-bold text-primary">{activeProjectsCount}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Pending Intake</p>
+                  <p className="text-3xl font-bold text-orange-500">{pendingIntakeCount}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Unread Msgs</p>
+                  <p className="text-3xl font-bold text-blue-500">{unreadCount}</p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Pending Intake</p>
-                <p className="text-3xl font-bold text-orange-500">{pendingIntakeCount}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Unread Msgs</p>
-                <p className="text-3xl font-bold text-blue-500">{unreadCount}</p>
-              </div>
-            </div>
+            )}
           </BentoTile>
-          {/* Revenue Summary Tile (Medium) */}
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[200px] bg-white text-foreground border-gray-100"
+            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[200px] bg-white text-foreground border-gray-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             noPadding
           >
             <div className="p-6 flex flex-col justify-between h-full">
@@ -123,19 +118,23 @@ export function AdminDashboard() {
               </div>
               <div>
                 <p className="text-muted-foreground text-sm font-medium">Total Revenue</p>
-                <h3 className="text-3xl font-bold mt-1">${totalRevenue.toLocaleString()}</h3>
+                {isLoading ? <Skeleton className="h-10 w-32 mt-1" /> : <h3 className="text-3xl font-bold mt-1">${totalRevenue.toLocaleString()}</h3>}
               </div>
             </div>
           </BentoTile>
-          {/* New Intake Requests Tile (Medium) */}
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[200px]"
+            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[200px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Intake Requests"
             icon={<FileText className="size-5" />}
             action={<Button variant="ghost" size="icon" className="h-8 w-8"><ArrowUpRight className="size-4" /></Button>}
           >
             <div className="flex flex-col justify-center h-full space-y-4">
-              {intakeRequests.length === 0 ? (
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : intakeRequests.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center">No pending requests</p>
               ) : (
                 intakeRequests.map(project => (
@@ -156,16 +155,14 @@ export function AdminDashboard() {
             </div>
           </BentoTile>
           {/* --- MIDDLE ROW --- */}
-          {/* Instant Chat Panel (Large Vertical) */}
           <BentoTile
-            className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 min-h-[500px]"
+            className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 min-h-[500px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Instant Chat"
             icon={<MessageSquare className="size-5" />}
             noPadding
           >
             <div className="flex h-full flex-col">
               <div className="flex-1 flex overflow-hidden">
-                {/* Mini Sidebar for Chat */}
                 <div className="w-20 border-r border-gray-100 flex flex-col items-center py-4 gap-4 bg-gray-50/50">
                   {chats.slice(0, 5).map((chat) => (
                     <div key={chat.id} className="relative group cursor-pointer">
@@ -184,7 +181,6 @@ export function AdminDashboard() {
                     </Button>
                   </div>
                 </div>
-                {/* Chat Area Mock */}
                 <div className="flex-1 flex flex-col bg-white">
                   <ScrollArea className="flex-1 p-4">
                     <div className="space-y-4">
@@ -216,9 +212,8 @@ export function AdminDashboard() {
               </div>
             </div>
           </BentoTile>
-          {/* Clients Tile (Small) */}
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[240px]"
+            className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[240px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Clients"
             icon={<Users className="size-5" />}
           >
@@ -241,9 +236,8 @@ export function AdminDashboard() {
               </Button>
             </div>
           </BentoTile>
-          {/* Projects Summary Tile (Large) */}
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-6 min-h-[240px]"
+            className="col-span-1 md:col-span-2 lg:col-span-6 min-h-[240px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Active Projects"
             icon={<FolderKanban className="size-5" />}
           >
@@ -278,9 +272,8 @@ export function AdminDashboard() {
             </div>
           </BentoTile>
           {/* --- LOWER ROW --- */}
-          {/* Frame.io Tile */}
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[160px]"
+            className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[160px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             noPadding
           >
             <div className="h-full flex flex-col items-center justify-center p-6 hover:bg-gray-50 transition-colors cursor-pointer gap-3">
@@ -290,9 +283,8 @@ export function AdminDashboard() {
               <span className="font-medium text-sm">Frame.io</span>
             </div>
           </BentoTile>
-          {/* Google Drive Tile */}
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
+            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             noPadding
           >
             <div className="h-full flex flex-col items-center justify-center p-6 hover:bg-gray-50 transition-colors cursor-pointer gap-3">
@@ -302,9 +294,8 @@ export function AdminDashboard() {
               <span className="font-medium text-sm">Google Drive</span>
             </div>
           </BentoTile>
-          {/* Dropbox Tile */}
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px]"
+            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[160px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             noPadding
           >
             <div className="h-full flex flex-col items-center justify-center p-6 hover:bg-gray-50 transition-colors cursor-pointer gap-3">

@@ -15,9 +15,9 @@ const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
     (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
-    z.number().positive({ message: "Cost must be a positive number." })
+    z.number({ invalid_type_error: "Cost must be a number." }).positive({ message: "Cost must be a positive number." })
   ),
-  date: z.date(),
+  date: z.date({ required_error: "A purchase date is required." }),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
@@ -46,9 +46,9 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
     onSubmit(processedData);
   };
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
+    <div className="max-w-7xl mx-auto">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 group transition-shadow hover:shadow-md p-4 rounded-lg">
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 group">
           <FormField
             control={form.control}
             name="item"
@@ -56,7 +56,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
               <FormItem>
                 <FormLabel>Item / Service</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., MacBook Pro M3" {...field} />
+                  <Input placeholder="e.g., MacBook Pro M3" {...field} className="hover:border-primary/50 transition-colors" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -76,7 +76,8 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                       placeholder="2499.00"
                       {...field}
                       value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
+                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
+                      className="hover:border-primary/50 transition-colors"
                     />
                   </FormControl>
                   <FormMessage />
@@ -95,7 +96,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-full pl-3 text-left font-normal",
+                            "w-full pl-3 text-left font-normal hover:border-primary/50 transition-colors",
                             !field.value && "text-muted-foreground"
                           )}
                         >
@@ -130,7 +131,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                 <FormLabel>Category</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="hover:border-primary/50 transition-colors">
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                   </FormControl>
@@ -152,13 +153,13 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
               <FormItem>
                 <FormLabel>Assigned To (Optional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Sarah Jenkins" {...field} value={field.value ?? ''} />
+                  <Input placeholder="e.g., Sarah Jenkins" {...field} value={field.value ?? ''} className="hover:border-primary/50 transition-colors" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full transition-shadow hover:shadow-lg hover:shadow-primary/20" disabled={isSubmitting}>
+          <Button type="submit" className="w-full transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98]" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

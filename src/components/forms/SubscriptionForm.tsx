@@ -16,7 +16,7 @@ const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
     (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
-    z.number().positive({ message: "Price must be a positive number." })
+    z.number({ invalid_type_error: "Price must be a number." }).positive({ message: "Price must be a positive number." })
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
@@ -61,7 +61,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
     onSubmit(processedData);
   };
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
+    <div className="max-w-7xl mx-auto">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 group">
           <FormField
@@ -71,7 +71,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
               <FormItem>
                 <FormLabel>Service Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Adobe Creative Cloud" {...field} />
+                  <Input placeholder="e.g., Adobe Creative Cloud" {...field} className="hover:border-primary/50 transition-colors" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -91,7 +91,8 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                       placeholder="54.99"
                       {...field}
                       value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
+                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
+                      className="hover:border-primary/50 transition-colors"
                     />
                   </FormControl>
                   <FormMessage />
@@ -106,7 +107,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                   <FormLabel>Billing Cycle</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="hover:border-primary/50 transition-colors">
                         <SelectValue placeholder="Select cycle" />
                       </SelectTrigger>
                     </FormControl>
@@ -174,7 +175,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-full pl-3 text-left font-normal",
+                            "w-full pl-3 text-left font-normal hover:border-primary/50 transition-colors",
                             !field.value && "text-muted-foreground"
                           )}
                         >
@@ -192,7 +193,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
               )}
             />
           )}
-          <Button type="submit" className="w-full transition-shadow hover:shadow-lg hover:shadow-primary/20" disabled={isSubmitting}>
+          <Button type="submit" className="w-full transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98]" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
