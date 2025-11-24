@@ -15,8 +15,8 @@ import { format, addDays, addMonths, addYears } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
-    (val) => (val ? Number(val) : undefined),
-    z.number().positive({ message: "Price must be a positive number." })
+    (val) => (String(val).trim() === '' ? undefined : Number(val)),
+    z.number({ invalid_type_error: "Price must be a number." }).positive({ message: "Price must be a positive number." })
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
@@ -61,7 +61,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
     onSubmit(processedData);
   };
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 group">
           <FormField
@@ -91,7 +91,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                       placeholder="54.99"
                       {...field}
                       value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value ? e.target.valueAsNumber : undefined)}
+                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
                       className="hover:border-primary/50 transition-colors"
                     />
                   </FormControl>

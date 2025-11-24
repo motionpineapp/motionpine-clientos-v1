@@ -14,10 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
-    (val) => (val ? Number(val) : undefined),
-    z.number().positive({ message: "Cost must be a positive number." })
+    (val) => (String(val).trim() === '' ? undefined : Number(val)),
+    z.number({ invalid_type_error: "Cost must be a number." }).positive({ message: "Cost must be a positive number." })
   ),
-  date: z.date({ required_error: "A purchase date is required." }),
+  date: z.date({ message: "A purchase date is required." }),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
@@ -46,7 +46,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
     onSubmit(processedData);
   };
   return (
-    <div className="max-w-7xl mx-auto group transition-all">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 group hover:shadow-md transition-all">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <FormField
@@ -76,7 +76,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                       placeholder="2499.00"
                       {...field}
                       value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value ? e.target.valueAsNumber : undefined)}
+                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
                       className="hover:border-primary/50 transition-colors"
                     />
                   </FormControl>
