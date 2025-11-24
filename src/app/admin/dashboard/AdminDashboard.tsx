@@ -109,20 +109,20 @@ export function AdminDashboard() {
           </BentoTile>
           {/* Revenue Summary Tile (Medium) */}
           <BentoTile
-            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[200px] bg-gradient-to-br from-gray-900 to-gray-800 text-white border-none"
+            className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[200px] bg-white text-foreground border-gray-100"
             noPadding
           >
             <div className="p-6 flex flex-col justify-between h-full">
               <div className="flex items-center justify-between">
-                <div className="p-2 bg-white/10 rounded-xl">
-                  <DollarSign className="size-5 text-white" />
+                <div className="p-2 bg-gray-100 rounded-xl">
+                  <DollarSign className="size-5 text-primary" />
                 </div>
-                <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-none">
+                <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
                   +12.5%
                 </Badge>
               </div>
               <div>
-                <p className="text-gray-400 text-sm font-medium">Total Revenue</p>
+                <p className="text-muted-foreground text-sm font-medium">Total Revenue</p>
                 <h3 className="text-3xl font-bold mt-1">${totalRevenue.toLocaleString()}</h3>
               </div>
             </div>
