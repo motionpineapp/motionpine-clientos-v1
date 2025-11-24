@@ -75,7 +75,7 @@ export function ClientDashboard() {
           <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 w-full lg:w-auto">
             {/* Pines / Credit Counter Tile */}
             <BentoTile
-              className="flex-1 min-h-[220px] group-hover:scale-105 transition-transform"
+              className="flex-1 min-h-[220px] transition-all hover:shadow-md"
               title="Wallet"
               icon={<Wallet className="size-5" />}
             >
@@ -97,7 +97,7 @@ export function ClientDashboard() {
             </BentoTile>
             {/* Project Intake Tile */}
             <BentoTile
-              className="flex-1 min-h-[220px] bg-gradient-to-r from-white to-gray-50 text-foreground group-hover:scale-105 transition-transform"
+              className="flex-1 min-h-[220px] bg-gradient-to-r from-white to-gray-50 text-foreground transition-all hover:shadow-md"
               title="Start a New Project"
               icon={<FileText className="size-5 text-gray-700" />}
             >

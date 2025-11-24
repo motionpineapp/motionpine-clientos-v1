@@ -14,16 +14,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)),
-    z.number({ invalid_type_error: "Cost must be a number." }).positive({ message: "Cost must be a positive number." })
+    (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
+    z.number().positive({ message: "Cost must be a positive number." })
   ),
-  date: z.date({ required_error: "A purchase date is required." }),
+  date: z.date({ message: "A purchase date is required." }),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
 export type ExpenseFormData = z.infer<typeof expenseSchema>;
 interface ExpenseFormProps {
-  onSubmit: (data: ExpenseFormData) => void;
+  onSubmit: (data: Omit<ExpenseFormData, 'date'> & { date: string }) => void;
   isSubmitting: boolean;
   defaultValues?: Partial<ExpenseFormData>;
 }
@@ -38,10 +38,17 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
       assignedTo: "",
     },
   });
+  const handleFormSubmit = async (data: ExpenseFormData) => {
+    const processedData = {
+      ...data,
+      date: data.date.toISOString(),
+    };
+    onSubmit(processedData);
+  };
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 group transition-shadow hover:shadow-md p-4 rounded-lg">
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 group transition-shadow hover:shadow-md p-4 rounded-lg">
           <FormField
             control={form.control}
             name="item"

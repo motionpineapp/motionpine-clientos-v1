@@ -11,10 +11,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, addDays, addMonths, addYears } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
-  price: z.coerce.number().positive({ message: "Price must be a positive number." }),
+  price: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
+    z.number().positive({ message: "Price must be a positive number." })
+  ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
   customStartDate: z.date().optional(),
@@ -29,7 +32,7 @@ const subscriptionSchema = z.object({
 });
 export type SubscriptionFormData = z.infer<typeof subscriptionSchema>;
 interface SubscriptionFormProps {
-  onSubmit: (data: SubscriptionFormData) => void;
+  onSubmit: (data: Omit<SubscriptionFormData, 'nextBillingDate' | 'status'> & { nextBillingDate: string; status: 'active' }) => void;
   isSubmitting: boolean;
   defaultValues?: Partial<SubscriptionFormData>;
 }
@@ -43,11 +46,24 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
       startDateOption: "today",
     },
   });
+  const handleFormSubmit = async (data: SubscriptionFormData) => {
+    let startDate = new Date();
+    if (data.startDateOption === 'yesterday') startDate = addDays(new Date(), -1);
+    else if (data.startDateOption === 'tomorrow') startDate = addDays(new Date(), 1);
+    else if (data.startDateOption === 'custom' && data.customStartDate) startDate = data.customStartDate;
+    const nextBillingDate = data.billingCycle === 'monthly' ? addMonths(startDate, 1) : addYears(startDate, 1);
+    const processedData = {
+      ...data,
+      nextBillingDate: nextBillingDate.toISOString(),
+      status: 'active' as const
+    };
+    onSubmit(processedData);
+  };
   const startDateOption = form.watch('startDateOption');
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 group">
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 group">
           <FormField
             control={form.control}
             name="name"
@@ -74,8 +90,8 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                       step="0.01"
                       placeholder="54.99"
                       {...field}
-                      onChange={event => field.onChange(event.target.value === '' ? undefined : +event.target.value)}
                       value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
                     />
                   </FormControl>
                   <FormMessage />
