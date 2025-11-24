@@ -24,11 +24,24 @@ import { pineService } from '@/services/pines';
 import { Project } from '@shared/types';
 import { toast } from 'sonner';
 export function ClientDashboard() {
-  const navigate = useNavigate();
   const user = useAuthStore(s => s.user);
   const [projects, setProjects] = useState<Project[]>([]);
   const [pinesBalance, setPinesBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  // Guard against calling hooks when user context might not be ready.
+  // This prevents the "useNavigate() may be used only in the context of a <Router> component" error.
+  if (!user) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
+        <div className="flex items-center justify-center h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground ml-2">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  // Hooks are now safe to call after the guard.
+  const navigate = useNavigate();
   useEffect(() => {
     const loadData = async () => {
       if (!user?.id) {
@@ -63,13 +76,6 @@ export function ClientDashboard() {
           </div>
         </div>
       </div>
-    );
-  }
-  if (!user) {
-    return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
-            <div className="text-center text-muted-foreground">User data not available. Please try logging in again.</div>
-        </div>
     );
   }
   return (

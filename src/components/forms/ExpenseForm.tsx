@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
     (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
-    z.number({ invalid_type_error: "Cost must be a number." }).positive({ message: "Cost must be a positive number." })
+    z.number({ message: "Cost must be a number." }).positive({ message: "Cost must be a positive number." })
   ),
   date: z.date({ message: "A date is required." }),
   assignedTo: z.string().optional(),
