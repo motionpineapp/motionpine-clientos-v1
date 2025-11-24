@@ -10,7 +10,8 @@ import {
   LogOut,
   FileText,
   Menu,
-  Wallet
+  Wallet,
+  Loader2
 } from 'lucide-react';
 import { useAuthStore } from '@/services/auth';
 import {
@@ -33,15 +34,23 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const user = useAuthStore(s => s.user);
-  const logout = useAuthStore(s => s.logout);
   const navigate = useNavigate();
   const location = useLocation();
+  const user = useAuthStore(s => s.user);
+  const logout = useAuthStore(s => s.logout);
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
-  const isAdmin = user?.role === 'admin';
+  // Guard against rendering the layout without a user, which can cause hook errors.
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  const isAdmin = user.role === 'admin';
   const adminLinks = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
     { icon: Users, label: 'Clients', href: '/admin/clients' },
@@ -103,12 +112,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <SidebarFooter className="p-4 border-t border-gray-50/50">
           <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
             <Avatar className="h-9 w-9 border border-gray-200">
-              <AvatarImage src={user?.avatar} />
-              <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+              <AvatarImage src={user.avatar} />
+              <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
-              <span className="text-sm font-medium truncate">{user?.name}</span>
-              <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+              <span className="text-sm font-medium truncate">{user.name}</span>
+              <span className="text-xs text-muted-foreground truncate">{user.email}</span>
             </div>
           </div>
           <Button

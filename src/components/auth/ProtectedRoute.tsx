@@ -11,7 +11,7 @@ export function ProtectedRoute({ role }: ProtectedRouteProps) {
   const isLoading = useAuthStore(s => s.isLoading);
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-background max-w-full mx-auto">
         <div className="animate-pulse flex flex-col items-center gap-4">
           <div className="h-12 w-12 bg-primary rounded-xl" />
           <p className="text-muted-foreground text-sm">Loading...</p>
@@ -24,7 +24,8 @@ export function ProtectedRoute({ role }: ProtectedRouteProps) {
   }
   if (role && user?.role !== role) {
     // Redirect to correct dashboard if wrong role
-    return <Navigate to={user?.role === 'admin' ? '/admin/dashboard' : '/client/dashboard'} replace />;
+    const correctDashboard = user?.role === 'admin' ? '/admin/dashboard' : '/client/dashboard';
+    return <Navigate to={correctDashboard} replace />;
   }
   return (
     <DashboardLayout>
