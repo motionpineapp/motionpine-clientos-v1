@@ -15,9 +15,9 @@ const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
     (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
-    z.number().positive({ message: "Cost must be a positive number." })
+    z.number({ invalid_type_error: "Cost must be a number." }).positive({ message: "Cost must be a positive number." })
   ),
-  date: z.date({ message: "A purchase date is required." }),
+  date: z.date({ required_error: "A purchase date is required." }),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
@@ -38,7 +38,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
       assignedTo: "",
     },
   });
-  const handleFormSubmit = async (data: ExpenseFormData) => {
+  const handleFormSubmit = (data: ExpenseFormData) => {
     const processedData = {
       ...data,
       date: data.date.toISOString(),
@@ -76,7 +76,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                       placeholder="2499.00"
                       {...field}
                       value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber ?? undefined)}
                     />
                   </FormControl>
                   <FormMessage />
