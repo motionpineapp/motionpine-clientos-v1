@@ -32,6 +32,7 @@ export function ClientDashboard() {
   useEffect(() => {
     const loadData = async () => {
       if (!user?.id) {
+        console.warn("ClientDashboard: user.id is missing, cannot load data.");
         setIsLoading(false);
         return;
       }

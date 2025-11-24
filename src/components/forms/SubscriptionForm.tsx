@@ -16,7 +16,7 @@ const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
     (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
-    z.number({ required_error: "Price is required." }).positive({ message: "Price must be a positive number." })
+    z.number({ message: "Price is required." }).positive({ message: "Price must be a positive number." })
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
