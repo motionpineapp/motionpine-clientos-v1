@@ -15,10 +15,7 @@ const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
     (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
-    z.number({
-      invalid_type_error: "Cost must be a number.",
-      required_error: "Cost is required."
-    }).positive({ message: "Cost must be a positive number." })
+    z.number({ message: "Cost is required." }).positive({ message: "Cost must be a positive number." })
   ),
   date: z.date({
     required_error: "A purchase date is required.",
