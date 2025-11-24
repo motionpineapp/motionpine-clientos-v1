@@ -14,8 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
-    (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
-    z.number({ invalid_type_error: "Cost must be a number." }).positive({ message: "Cost must be a positive number." })
+    (val) => (val ? Number(val) : undefined),
+    z.number().positive({ message: "Cost must be a positive number." })
   ),
   date: z.date({ required_error: "A purchase date is required." }),
   assignedTo: z.string().optional(),
@@ -46,9 +46,9 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
     onSubmit(processedData);
   };
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto group transition-all">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 group">
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <FormField
             control={form.control}
             name="item"
@@ -76,7 +76,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
                       placeholder="2499.00"
                       {...field}
                       value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
+                      onChange={(e) => field.onChange(e.target.value ? e.target.valueAsNumber : undefined)}
                       className="hover:border-primary/50 transition-colors"
                     />
                   </FormControl>

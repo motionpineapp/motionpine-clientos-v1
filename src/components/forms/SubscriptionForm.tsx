@@ -15,8 +15,8 @@ import { format, addDays, addMonths, addYears } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
-    (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
-    z.number({ invalid_type_error: "Price must be a number." }).positive({ message: "Price must be a positive number." })
+    (val) => (val ? Number(val) : undefined),
+    z.number().positive({ message: "Price must be a positive number." })
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
@@ -68,7 +68,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
             control={form.control}
             name="name"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="hover:bg-accent/10 transition-colors p-1 rounded-md">
                 <FormLabel>Service Name</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g., Adobe Creative Cloud" {...field} className="hover:border-primary/50 transition-colors" />
@@ -82,7 +82,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
               control={form.control}
               name="price"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="hover:bg-accent/10 transition-colors p-1 rounded-md">
                   <FormLabel>Price ($)</FormLabel>
                   <FormControl>
                     <Input
@@ -91,7 +91,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                       placeholder="54.99"
                       {...field}
                       value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
+                      onChange={(e) => field.onChange(e.target.value ? e.target.valueAsNumber : undefined)}
                       className="hover:border-primary/50 transition-colors"
                     />
                   </FormControl>
@@ -103,7 +103,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
               control={form.control}
               name="billingCycle"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="hover:bg-accent/10 transition-colors p-1 rounded-md">
                   <FormLabel>Billing Cycle</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
@@ -125,7 +125,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
             control={form.control}
             name="startDateOption"
             render={({ field }) => (
-              <FormItem className="space-y-3">
+              <FormItem className="space-y-3 hover:bg-accent/10 transition-colors p-1 rounded-md">
                 <FormLabel>First Billing Date</FormLabel>
                 <FormControl>
                   <RadioGroup
@@ -168,7 +168,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
               control={form.control}
               name="customStartDate"
               render={({ field }) => (
-                <FormItem className="flex flex-col animate-fade-in">
+                <FormItem className="flex flex-col animate-fade-in hover:bg-accent/10 transition-colors p-1 rounded-md">
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>

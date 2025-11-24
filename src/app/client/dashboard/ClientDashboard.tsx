@@ -78,7 +78,7 @@ export function ClientDashboard() {
   }
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
-      <motion.div 
+      <motion.div
         className="space-y-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -91,32 +91,32 @@ export function ClientDashboard() {
           </div>
           <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto lg:flex-grow">
             <BentoTile
-              className="flex-1 min-h-[180px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 order-2 lg:order-1 lg:flex-basis-[35%]"
+              className="flex-1 min-h-[160px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 order-2 lg:order-1 lg:flex-basis-[35%]"
               title="Wallet"
               icon={<Wallet className="size-5" />}
+              noPadding
             >
-              <div className="flex flex-col justify-between h-full py-2 px-3">
+              <div className="flex flex-col justify-between h-full p-4">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Available Pines</p>
                   <h2 className="text-3xl font-bold tracking-tighter text-primary">{pinesBalance.toLocaleString()}</h2>
                 </div>
-                <div className="space-y-2 mt-2">
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/client/wallet')}>
-                    View History
-                  </Button>
-                </div>
+                <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => navigate('/client/wallet')}>
+                  View History
+                </Button>
               </div>
             </BentoTile>
             <BentoTile
-              className="flex-1 min-h-[180px] bg-gradient-to-r from-white to-gray-50 text-foreground transition-all duration-300 hover:shadow-lg hover:-translate-y-1 order-1 lg:order-2 lg:flex-grow"
+              className="flex-1 min-h-[160px] bg-gradient-to-r from-white to-gray-50 text-foreground transition-all duration-300 hover:shadow-lg hover:-translate-y-1 order-1 lg:order-2 lg:flex-grow"
               title="Start a New Project"
               icon={<FileText className="size-5 text-gray-700" />}
+              noPadding
             >
-              <div className="flex flex-col justify-between h-full">
+              <div className="flex flex-col justify-between h-full p-4">
                 <p className="text-gray-600 text-xs leading-relaxed">
                   Ready to launch your next campaign? Fill out the intake form to get started.
                 </p>
-                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold mt-3 w-full" onClick={() => navigate('/client/intake')}>
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold mt-3 w-full" onClick={() => navigate('/client/intake')}>
                   Create Request
                 </Button>
               </div>
