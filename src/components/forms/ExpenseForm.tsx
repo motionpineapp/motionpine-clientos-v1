@@ -15,9 +15,9 @@ const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
     (val) => (String(val).trim() === '' || val === null || val === undefined ? undefined : Number(val)),
-    z.number({ message: "Cost must be a number." }).positive({ message: "Cost must be a positive number." }).optional()
-  ).transform(val => val ?? 0), // Default to 0 if undefined after preprocess
-  date: z.date(),
+    z.number().positive({ message: "Cost must be a positive number." }).optional()
+  ),
+  date: z.date({ required_error: "A purchase date is required." }),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });
@@ -46,7 +46,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
     onSubmit(processedData);
   };
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 group transition-all">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <FormField
@@ -159,7 +159,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98]" disabled={isSubmitting}>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

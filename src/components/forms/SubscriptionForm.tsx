@@ -16,8 +16,8 @@ const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
     (val) => (String(val).trim() === '' || val === null || val === undefined ? undefined : Number(val)),
-    z.number({ message: "Price must be a number." }).positive({ message: "Price must be a positive number." }).optional()
-  ).transform(val => val ?? 0),
+    z.number().positive({ message: "Price must be a positive number." }).optional()
+  ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
   customStartDate: z.date().optional(),
@@ -62,7 +62,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
     onSubmit(processedData);
   };
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 group transition-all">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <FormField
@@ -194,7 +194,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
               )}
             />
           )}
-          <Button type="submit" className="w-full transition-all hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98]" disabled={isSubmitting}>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
