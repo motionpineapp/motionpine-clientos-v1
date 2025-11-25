@@ -6,7 +6,8 @@ import { createRoot } from 'react-dom/client'
 import {
   createBrowserRouter,
   RouterProvider,
-  Navigate
+  Navigate,
+  Outlet
 } from "react-router-dom";
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
@@ -30,63 +31,61 @@ import { ClientSettingsPage } from '@/app/client/settings/ClientSettingsPage';
 import { WalletPage } from '@/app/client/wallet/WalletPage';
 import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+function RootLayout() {
+  return (
+    <ErrorBoundary>
+      <Toaster richColors position="top-center" />
+      <Outlet />
+    </ErrorBoundary>
+  );
+}
+
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <HomePage />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/login",
-    element: <LoginPage />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/client/setup",
-    element: <SetupPage />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  // Admin Routes
-  {
-    path: "/admin",
-    element: <ProtectedRoute role="admin" />,
+    element: <RootLayout />,
     errorElement: <RouteErrorBoundary />,
     children: [
-      { path: "dashboard", element: <AdminDashboard /> },
-      { path: "clients", element: <ClientsPage /> },
-      { path: "projects", element: <ProjectsPage /> },
-      { path: "projects/:id", element: <ProjectDetailPage /> },
-      { path: "chat", element: <ChatPage /> },
-      { path: "expenses", element: <ExpensesPage /> },
-      { path: "teams", element: <TeamsPage /> },
-      { path: "settings", element: <SettingsPage /> },
+      { index: true, element: <HomePage />, errorElement: <RouteErrorBoundary /> },
+      { path: "login", element: <LoginPage />, errorElement: <RouteErrorBoundary /> },
+      { path: "client/setup", element: <SetupPage />, errorElement: <RouteErrorBoundary /> },
+      // Admin Routes
+      {
+        path: "admin",
+        element: <ProtectedRoute role="admin" />,
+        errorElement: <RouteErrorBoundary />,
+        children: [
+          { path: "dashboard", element: <AdminDashboard /> },
+          { path: "clients", element: <ClientsPage /> },
+          { path: "projects", element: <ProjectsPage /> },
+          { path: "projects/:id", element: <ProjectDetailPage /> },
+          { path: "chat", element: <ChatPage /> },
+          { path: "expenses", element: <ExpensesPage /> },
+          { path: "teams", element: <TeamsPage /> },
+          { path: "settings", element: <SettingsPage /> },
+        ]
+      },
+      // Client Routes
+      {
+        path: "client",
+        element: <ProtectedRoute role="client" />,
+        errorElement: <RouteErrorBoundary />,
+        children: [
+          { path: "dashboard", element: <ClientDashboard /> },
+          { path: "projects", element: <ClientProjectsPage /> },
+          { path: "chat", element: <ClientChatPage /> },
+          { path: "intake", element: <IntakePage /> },
+          { path: "settings", element: <ClientSettingsPage /> },
+          { path: "wallet", element: <WalletPage /> },
+        ]
+      },
+      // Fallback
+      { path: "*", element: <Navigate to="/" replace /> },
     ]
-  },
-  // Client Routes
-  {
-    path: "/client",
-    element: <ProtectedRoute role="client" />,
-    errorElement: <RouteErrorBoundary />,
-    children: [
-      { path: "dashboard", element: <ClientDashboard /> },
-      { path: "projects", element: <ClientProjectsPage /> },
-      { path: "chat", element: <ClientChatPage /> },
-      { path: "intake", element: <IntakePage /> },
-      { path: "settings", element: <ClientSettingsPage /> },
-      { path: "wallet", element: <WalletPage /> },
-    ]
-  },
-  // Fallback
-  {
-    path: "*",
-    element: <Navigate to="/" replace />
   }
 ]);
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary>
-      <RouterProvider router={router} />
-      <Toaster richColors position="top-center" />
-    </ErrorBoundary>
+    <RouterProvider router={router} />
   </StrictMode>,
 )

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '@/services/auth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Loader2 } from 'lucide-react';
@@ -25,34 +25,37 @@ function LoadingFallback() {
 }
 export function ProtectedRoute({ role }: ProtectedRouteProps) {
   // Hooks are now at the top-level, called unconditionally.
-  const navigate = useNavigate();
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const user = useAuthStore(s => s.user);
   const isLoading = useAuthStore(s => s.isLoading);
+
+
+
   useEffect(() => {
-    // Logic is deferred to useEffect.
-    if (isLoading) {
-      return;
+    // Ensure session check runs on mount (useful for deep-link refreshes)
+    const s = useAuthStore.getState();
+    if (typeof s?.checkSession === 'function') {
+      s.checkSession();
     }
-    if (!isAuthenticated) {
-      navigate('/login', { replace: true });
-      return;
-    }
-    if (role && user?.role !== role) {
-      const correctDashboard = user?.role === 'admin' ? '/admin/dashboard' : '/client/dashboard';
-      navigate(correctDashboard, { replace: true });
-    }
-  }, [isAuthenticated, user?.role, isLoading, role, navigate]);
+    // Fallback: if isLoading gets stuck, attempt to clear it after 5s
+    const timeout = setTimeout(() => {
+      const cur = useAuthStore.getState();
+      if (cur?.isLoading) {
+        // useAuthStore.setState ensures we don't rely on possibly-undefined helper methods
+        useAuthStore.setState({ isLoading: false } as any);
+      }
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, []);
   if (isLoading) {
     return <LoadingFallback />;
   }
   if (!isAuthenticated) {
-    // Use Navigate component for declarative redirect instead of returning null
     return <Navigate to="/login" replace />;
   }
   if (role && user?.role !== role) {
-    // While useEffect handles navigation, returning null prevents rendering children prematurely.
-    return null;
+    const correctDashboard = user?.role === 'admin' ? '/admin/dashboard' : '/client/dashboard';
+    return <Navigate to={correctDashboard} replace />;
   }
   return (
     <DashboardLayout>
