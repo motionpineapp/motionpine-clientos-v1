@@ -1,6 +1,6 @@
 # MotionPine ClientOS
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/motionpineapp/motionpine-clientos-v1)
 
 A premium, minimalist client management operating system featuring bento-grid dashboards, real-time messaging, and project tracking.
 
@@ -96,4 +96,4 @@ This project is designed for seamless deployment to the Cloudflare network.
 
 Alternatively, you can deploy directly from your GitHub repository using the button below.
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/motionpineapp/motionpine-clientos-v1)
