@@ -39,16 +39,37 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   checkSession: async () => {
     set({ isLoading: true });
-    const stored = localStorage.getItem('motionpine_user');
-    if (stored) {
-      try {
-        const user = JSON.parse(stored);
-        set({ user, isAuthenticated: true });
-      } catch (e) {
-        console.error('Failed to parse session', e);
-        localStorage.removeItem('motionpine_user');
+    try {
+      // Guard for non-browser environments (SSR)
+      if (typeof window === 'undefined' || !window.localStorage) {
+        set({ user: null, isAuthenticated: false });
+        return;
       }
+
+      const stored = localStorage.getItem('motionpine_user');
+      if (stored) {
+        try {
+          const user = JSON.parse(stored);
+          set({ user, isAuthenticated: true });
+        } catch (e) {
+          console.error('Failed to parse session', e);
+          try {
+            localStorage.removeItem('motionpine_user');
+          } catch (removeErr) {
+            // swallow localStorage removal errors
+            console.error('Failed to remove invalid session from localStorage', removeErr);
+          }
+          set({ user: null, isAuthenticated: false });
+        }
+      } else {
+        set({ user: null, isAuthenticated: false });
+      }
+    } catch (e) {
+      // Swallow and log any unexpected errors to ensure this function never throws
+      console.error('checkSession error', e);
+      set({ user: null, isAuthenticated: false });
+    } finally {
+      set({ isLoading: false });
     }
-    set({ isLoading: false });
   }
 }));

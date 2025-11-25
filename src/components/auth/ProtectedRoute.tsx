@@ -24,10 +24,6 @@ function LoadingFallback() {
   );
 }
 export function ProtectedRoute({ role }: ProtectedRouteProps) {
-  // A check to ensure Router context is available. This is a bit of a workaround for edge cases.
-  if (typeof window !== 'undefined' && !(window as any).__REACT_ROUTER_CONTEXT__) {
-    return <LoadingFallback />;
-  }
   // Hooks are now at the top-level, called unconditionally.
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
@@ -43,10 +39,10 @@ export function ProtectedRoute({ role }: ProtectedRouteProps) {
       return;
     }
     if (role && user?.role !== role) {
-      const correctDashboard = user.role === 'admin' ? '/admin/dashboard' : '/client/dashboard';
+      const correctDashboard = user?.role === 'admin' ? '/admin/dashboard' : '/client/dashboard';
       navigate(correctDashboard, { replace: true });
     }
-  }, [isAuthenticated, user, isLoading, role, navigate]);
+  }, [isAuthenticated, user?.role, isLoading, role, navigate]);
   if (isLoading) {
     return <LoadingFallback />;
   }
