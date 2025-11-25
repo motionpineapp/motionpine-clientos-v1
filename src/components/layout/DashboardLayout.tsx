@@ -38,10 +38,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const user = useAuthStore(s => s.user);
   const logout = useAuthStore(s => s.logout);
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
   // Guard against rendering the layout without a user, which can cause hook errors.
   if (!user) {
     return (
@@ -50,6 +46,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
     );
   }
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
   const isAdmin = user.role === 'admin';
   const adminLinks = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },

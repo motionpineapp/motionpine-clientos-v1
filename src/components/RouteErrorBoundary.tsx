@@ -25,6 +25,7 @@ export function RouteErrorBoundary() {
           errorMessage = 'Unserializable route error';
         }
       }
+      console.error("Route Error Boundary Caught:", { errorMessage, error });
       errorReporter.report({
         message: errorMessage,
         stack: errorStack,
