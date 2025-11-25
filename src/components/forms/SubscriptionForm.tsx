@@ -14,10 +14,7 @@ import { cn } from '@/lib/utils';
 import { format, addDays, addMonths, addYears } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
-  price: z.preprocess(
-    (val) => (String(val).trim() === '' || val === null || val === undefined ? undefined : Number(val)),
-    z.number({ invalid_type_error: "Price must be a number." }).positive({ message: "Price must be a positive number." }).optional()
-  ),
+  price: z.coerce.number({ required_error: "Price is required." }).positive({ message: "Price must be a positive number." }),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
   customStartDate: z.date().optional(),
@@ -62,7 +59,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
     onSubmit(processedData);
   };
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
+    <div className="max-w-7xl mx-auto">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <FormField
@@ -92,7 +89,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
                       placeholder="54.99"
                       {...field}
                       value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
                       className="hover:border-primary/50 transition-colors"
                     />
                   </FormControl>

@@ -28,12 +28,13 @@ export function ProtectedRoute({ role }: ProtectedRouteProps) {
   if (typeof window !== 'undefined' && !(window as any).__REACT_ROUTER_CONTEXT__) {
     return <LoadingFallback />;
   }
+  // Hooks are now at the top-level, called unconditionally.
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const user = useAuthStore(s => s.user);
   const isLoading = useAuthStore(s => s.isLoading);
   useEffect(() => {
-    // Don't perform navigation logic while the auth state is still loading.
+    // Logic is deferred to useEffect.
     if (isLoading) {
       return;
     }
@@ -49,9 +50,12 @@ export function ProtectedRoute({ role }: ProtectedRouteProps) {
   if (isLoading) {
     return <LoadingFallback />;
   }
-  if (!isAuthenticated || (role && user?.role !== role)) {
+  if (!isAuthenticated) {
+    // Use Navigate component for declarative redirect instead of returning null
+    return <Navigate to="/login" replace />;
+  }
+  if (role && user?.role !== role) {
     // While useEffect handles navigation, returning null prevents rendering children prematurely.
-    // This avoids flashes of incorrect content.
     return null;
   }
   return (

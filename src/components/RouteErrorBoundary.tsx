@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { errorReporter } from '@/lib/errorReporter';
 import { ErrorFallback } from './ErrorFallback';
 export function RouteErrorBoundary() {
+  // Hook is now at the top-level, called unconditionally.
   const error = useRouteError();
   useEffect(() => {
     if (error) {
@@ -38,22 +39,23 @@ export function RouteErrorBoundary() {
     }
   }, [error]);
   // Render error UI using shared ErrorFallback component
-  if (isRouteErrorResponse(error)) {
-    return (
-      <ErrorFallback
-        title={`${error.status} ${error.statusText}`}
-        message="Sorry, an error occurred while loading this page."
-        error={error.data ? { message: JSON.stringify(error.data, null, 2) } : error}
-        statusMessage="Navigation error detected"
-      />
-    );
-  }
   return (
-    <ErrorFallback
-      title="Unexpected Error"
-      message="An unexpected error occurred while loading this page."
-      error={error}
-      statusMessage="Routing error detected"
-    />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
+      {isRouteErrorResponse(error) ? (
+        <ErrorFallback
+          title={`${error.status} ${error.statusText}`}
+          message="Sorry, an error occurred while loading this page."
+          error={error.data ? { message: JSON.stringify(error.data, null, 2) } : error}
+          statusMessage="Navigation error detected"
+        />
+      ) : (
+        <ErrorFallback
+          title="Unexpected Error"
+          message="An unexpected error occurred while loading this page."
+          error={error}
+          statusMessage="Routing error detected"
+        />
+      )}
+    </div>
   );
 }
