@@ -14,10 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
-    (val) => (String(val).trim() === '' ? undefined : Number(val)),
-    z.number().positive({ message: "Cost must be a positive number." })
+    (val) => (String(val).trim() === '' || val === null ? undefined : Number(val)),
+    z.number({ invalid_type_error: "Cost must be a number." }).positive({ message: "Cost must be a positive number." })
   ),
-  date: z.date({ required_error: "A purchase date is required." }),
+  date: z.date(),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
 });

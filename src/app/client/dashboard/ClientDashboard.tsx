@@ -126,7 +126,7 @@ export function ClientDashboard() {
         <div className="bento-grid">
           <BentoTile
             className="col-span-1 md:col-span-4 lg:col-span-4 lg:row-span-4 min-h-[700px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-            title="Support Chat"
+            title="Quick Chat"
             icon={<MessageSquare className="size-5" />}
             noPadding
           >

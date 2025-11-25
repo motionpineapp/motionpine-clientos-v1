@@ -15,8 +15,8 @@ import { format, addDays, addMonths, addYears } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
-    (val) => (String(val).trim() === '' ? undefined : Number(val)),
-    z.number().positive({ message: "Price must be a positive number." })
+    (val) => (String(val).trim() === '' || val === null ? undefined : Number(val)),
+    z.number({ invalid_type_error: "Price must be a number." }).positive({ message: "Price must be a positive number." })
   ),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),

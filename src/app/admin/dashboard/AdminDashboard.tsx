@@ -157,7 +157,7 @@ export function AdminDashboard() {
           {/* --- MIDDLE ROW --- */}
           <BentoTile
             className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 min-h-[500px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-            title="Instant Chat"
+            title="Quick Chat"
             icon={<MessageSquare className="size-5" />}
             noPadding
           >
