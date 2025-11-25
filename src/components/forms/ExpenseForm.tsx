@@ -14,9 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const expenseSchema = z.object({
   item: z.string().min(2, { message: "Item name is required." }),
   cost: z.preprocess(
-    (val) => (String(val).trim() === '' || val === null ? undefined : Number(val)),
-    z.number({ invalid_type_error: "Cost must be a number." }).positive({ message: "Cost must be a positive number." })
-  ),
+    (val) => (String(val).trim() === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number({ message: "Cost must be a number." }).positive({ message: "Cost must be a positive number." }).optional()
+  ).transform(val => val ?? 0), // Default to 0 if undefined after preprocess
   date: z.date(),
   assignedTo: z.string().optional(),
   category: z.enum(['infrastructure', 'software', 'office', 'other']),
@@ -46,7 +46,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, defaultValues }: ExpenseFo
     onSubmit(processedData);
   };
   return (
-    <div className="group transition-all">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 group transition-all">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <FormField

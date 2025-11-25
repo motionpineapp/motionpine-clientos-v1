@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '@/services/auth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { Loader2 } from 'lucide-react';
 interface ProtectedRouteProps {
   role?: 'admin' | 'client';
 }
@@ -16,8 +17,8 @@ export function ProtectedRoute({ role }: ProtectedRouteProps) {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
             <div className="animate-pulse flex flex-col items-center gap-4">
-            <div className="h-12 w-12 bg-primary rounded-xl" />
-            <p className="text-muted-foreground text-sm">Loading...</p>
+              <div className="h-12 w-12 bg-primary rounded-xl" />
+              <p className="text-muted-foreground text-sm">Loading...</p>
             </div>
         </div>
       </div>

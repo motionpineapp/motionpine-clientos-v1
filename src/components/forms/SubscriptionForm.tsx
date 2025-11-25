@@ -15,9 +15,9 @@ import { format, addDays, addMonths, addYears } from 'date-fns';
 const subscriptionSchema = z.object({
   name: z.string().min(2, { message: "Service name is required." }),
   price: z.preprocess(
-    (val) => (String(val).trim() === '' || val === null ? undefined : Number(val)),
-    z.number({ invalid_type_error: "Price must be a number." }).positive({ message: "Price must be a positive number." })
-  ),
+    (val) => (String(val).trim() === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number({ message: "Price must be a number." }).positive({ message: "Price must be a positive number." }).optional()
+  ).transform(val => val ?? 0),
   billingCycle: z.enum(['monthly', 'yearly']),
   startDateOption: z.enum(['yesterday', 'today', 'tomorrow', 'custom']),
   customStartDate: z.date().optional(),
@@ -62,7 +62,7 @@ export function SubscriptionForm({ onSubmit, isSubmitting, defaultValues }: Subs
     onSubmit(processedData);
   };
   return (
-    <div className="group transition-all">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 group transition-all">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <FormField
