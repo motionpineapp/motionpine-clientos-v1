@@ -1,56 +1,91 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 @layer base {
   :root {
-    /* MotionPine Light Theme - Premium, Clean, Minimal */
-    --background: 0 0% 98%; /* Slightly off-white for the page background */
-    --foreground: 240 10% 3.9%; /* Soft black */
-    --card: 0 0% 100%; /* Pure white cards */
+    /* MotionPine Brand Theme - Vibrant Blue #324BFF */
+    --background: 0 0% 98%;
+    /* Slightly off-white for the page background */
+    --foreground: 240 10% 3.9%;
+    /* Soft black */
+    --card: 0 0% 100%;
+    /* Pure white cards */
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%; /* Dark primary for contrast */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%; /* Light gray for secondary actions */
+
+    /* Primary Brand Color - Vibrant Blue */
+    --primary: 228 100% 60%;
+    /* #324BFF - Main brand color */
+    --primary-foreground: 0 0% 100%;
+    /* White text on blue */
+
+    /* Secondary - Keep subtle gray */
+    --secondary: 240 4.8% 95.9%;
+    /* Light gray for secondary actions */
     --secondary-foreground: 240 5.9% 10%;
+
+    /* Muted - Subtle backgrounds */
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+
+    /* Accent - Light blue tint */
+    --accent: 228 100% 97%;
+    /* Very light blue for hover states */
+    --accent-foreground: 228 100% 40%;
+    /* Darker blue for text on light blue */
+
+    /* Destructive - Keep red */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
+
+    /* Borders and inputs */
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 1rem; /* Rounded corners for modern feel */
+
+    /* Focus ring - Brand blue */
+    --ring: 228 100% 60%;
+    /* Blue focus rings */
+
+    --radius: 1rem;
+    /* Rounded corners for modern feel */
+
     /* Sidebar specific */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary: 228 100% 60%;
+    /* Brand blue for active items */
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-accent: 228 100% 97%;
+    /* Light blue for hover */
+    --sidebar-accent-foreground: 228 100% 40%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 228 100% 60%;
+    /* Brand blue */
   }
+
   * {
     @apply border-border;
   }
+
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
   body {
     @apply bg-background text-foreground font-sans;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 }
+
 @layer components {
   .bento-grid {
     @apply grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-4 md:gap-6;
   }
+
   .text-balance {
     text-wrap: balance;
   }

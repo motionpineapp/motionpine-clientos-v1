@@ -30,14 +30,17 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
+
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore(s => s.user);
   const logout = useAuthStore(s => s.logout);
+
   // Guard against rendering the layout without a user, which can cause hook errors.
   if (!user) {
     return (
@@ -46,11 +49,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
     );
   }
+
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
   const isAdmin = user.role === 'admin';
+
   const adminLinks = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
     { icon: Users, label: 'Clients', href: '/admin/clients' },
@@ -60,6 +66,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { icon: Users, label: 'Teams', href: '/admin/teams' },
     { icon: Settings, label: 'Settings', href: '/admin/settings' },
   ];
+
   const clientLinks = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/client/dashboard' },
     { icon: FolderKanban, label: 'Projects', href: '/client/projects' },
@@ -68,7 +75,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { icon: Wallet, label: 'Wallet', href: '/client/wallet' },
     { icon: Settings, label: 'Settings', href: '/client/settings' },
   ];
+
   const links = isAdmin ? adminLinks : clientLinks;
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon" className="border-r border-gray-100 bg-sidebar-background">
@@ -95,12 +104,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     className={cn(
                       "h-10 transition-all duration-200 rounded-xl",
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:text-primary-foreground"
-                        : "text-muted-foreground hover:bg-gray-100 hover:text-foreground"
+                        ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                        : "text-muted-foreground hover:bg-gray-50 hover:text-foreground hover:shadow-sm"
                     )}
                   >
                     <Link to={link.href} className="flex items-center gap-3">
-                      <link.icon className={cn("size-5", isActive ? "text-white" : "text-gray-500")} />
+                      <link.icon className={cn("size-5", isActive ? "text-blue-600" : "text-gray-500")} />
                       <span className="font-medium">{link.label}</span>
                     </Link>
                   </SidebarMenuButton>

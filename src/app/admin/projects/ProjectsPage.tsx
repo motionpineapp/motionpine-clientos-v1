@@ -90,7 +90,7 @@ export function ProjectsPage() {
   };
   const columns: { id: ProjectStatus; label: string; color: string }[] = [
     { id: 'todo', label: 'To Do', color: 'bg-gray-100 text-gray-600' },
-    { id: 'in-progress', label: 'In Progress', color: 'bg-blue-100 text-blue-600' },
+    { id: 'in-progress', label: 'In Progress', color: 'bg-blue-100 text-blue-700' },
     { id: 'done', label: 'Done', color: 'bg-green-100 text-green-600' }
   ];
   const projectDefaultValues = selectedProject ? {
@@ -136,8 +136,8 @@ export function ProjectsPage() {
         ) : (
           <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden min-h-0">
             {columns.map((col, i) => (
-              <motion.div 
-                key={col.id} 
+              <motion.div
+                key={col.id}
                 className="flex flex-col h-full bg-gray-50/50 rounded-2xl border border-gray-100 overflow-hidden"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

@@ -96,7 +96,7 @@ export function ClientsPage() {
   );
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-700 hover:bg-green-200 border-green-200';
+      case 'active': return 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200';
       case 'paused': return 'bg-orange-100 text-orange-700 hover:bg-orange-200 border-orange-200';
       case 'inactive': return 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200';
       default: return 'bg-gray-100 text-gray-700';
@@ -105,7 +105,7 @@ export function ClientsPage() {
   const getAccountStatusColor = (accountStatus?: string) => {
     switch (accountStatus) {
       case 'pending': return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200';
-      case 'setup_initiated': return 'bg-sky-100 text-sky-700 hover:bg-sky-200 border-sky-200';
+      case 'setup_initiated': return 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200';
       case 'active': return 'bg-green-100 text-green-700 hover:bg-green-200 border-green-200';
       case 'expired': return 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200';
       default: return 'bg-gray-100 text-gray-700';
