@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { expenseService } from '@/services/expenses';
-import { Expense, Subscription } from '@shared/types';
+import { teamService } from '@/services/teams';
+import { Expense, Subscription, TeamMember } from '@shared/types';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,38 +16,64 @@ import {
   DialogTrigger,
   DialogDescription
 } from '@/components/ui/dialog';
-import { Plus, Download, Filter, Loader2, CreditCard, Server } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
+import { Plus, Download, Filter, Loader2, CreditCard, Server, Check, ChevronsUpDown, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExpenseForm } from '@/components/forms/ExpenseForm';
 import { SubscriptionForm } from '@/components/forms/SubscriptionForm';
 import { addDays, addMonths, addYears } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+
 export function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isSubmittingExpense, setIsSubmittingExpense] = useState(false);
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const [isSubmittingSub, setIsSubmittingSub] = useState(false);
+
   useEffect(() => {
     loadData();
   }, []);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [expensesData, subsData] = await Promise.all([
+      const [expensesData, subsData, teamData] = await Promise.all([
         expenseService.getExpenses(),
-        expenseService.getSubscriptions()
+        expenseService.getSubscriptions(),
+        teamService.getTeamMembers()
       ]);
       setExpenses(expensesData.items);
       setSubscriptions(subsData.items);
+      setTeamMembers(teamData.items);
     } catch (error) {
-      toast.error('Failed to load expenses');
+      toast.error('Failed to load data');
     } finally {
       setIsLoading(false);
     }
   };
+
   const handleAddExpense = async (data: any) => {
     setIsSubmittingExpense(true);
     try {
@@ -61,6 +88,7 @@ export function ExpensesPage() {
       setIsSubmittingExpense(false);
     }
   };
+
   const handleAddSubscription = async (data: any) => {
     setIsSubmittingSub(true);
     try {
@@ -75,10 +103,28 @@ export function ExpensesPage() {
       setIsSubmittingSub(false);
     }
   };
+
+  const handleAssignMember = async (expenseId: string, memberId?: string) => {
+    try {
+      // Optimistic update
+      setExpenses(prev => prev.map(e =>
+        e.id === expenseId ? { ...e, assignedTo: memberId } : e
+      ));
+
+      // Send null instead of undefined for proper JSON serialization
+      await expenseService.updateExpense(expenseId, { assignedTo: memberId ?? null });
+      toast.success(memberId ? 'Expense assigned successfully' : 'Expense unassigned successfully');
+    } catch (error) {
+      toast.error(memberId ? 'Failed to assign member' : 'Failed to unassign member');
+      loadData(); // Revert on error
+    }
+  };
+
   const totalExpenses = expenses.reduce((acc, curr) => acc + curr.cost, 0);
   const monthlyRecurring = subscriptions
     .filter(s => s.status === 'active')
     .reduce((acc, curr) => acc + (curr.billingCycle === 'monthly' ? curr.price : curr.price / 12), 0);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <div className="space-y-6 animate-fade-in">
@@ -104,6 +150,7 @@ export function ExpensesPage() {
             </DialogContent>
           </Dialog>
         </PageHeader>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="border-gray-100 shadow-sm">
             <CardHeader className="pb-2">
@@ -133,6 +180,7 @@ export function ExpensesPage() {
             </CardContent>
           </Card>
         </div>
+
         <Tabs defaultValue="infrastructure" className="w-full">
           <div className="flex items-center justify-between mb-4">
             <TabsList className="bg-gray-100 p-1">
@@ -173,6 +221,7 @@ export function ExpensesPage() {
               </Button>
             </div>
           </div>
+
           <TabsContent value="infrastructure" className="mt-0">
             <Card className="border-gray-100 shadow-sm">
               <CardHeader>
@@ -209,7 +258,14 @@ export function ExpensesPage() {
                             {expense.category}
                           </Badge>
                         </TableCell>
-                        <TableCell>{expense.assignedTo}</TableCell>
+                        <TableCell>
+                          <MemberSelector
+                            expenseId={expense.id}
+                            currentMemberId={expense.assignedTo}
+                            members={teamMembers}
+                            onSelect={handleAssignMember}
+                          />
+                        </TableCell>
                         <TableCell className="text-muted-foreground">
                           {new Date(expense.date).toLocaleDateString()}
                         </TableCell>
@@ -223,6 +279,7 @@ export function ExpensesPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
           <TabsContent value="subscriptions" className="mt-0">
             <Card className="border-gray-100 shadow-sm">
               <CardHeader>
@@ -281,5 +338,96 @@ export function ExpensesPage() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+function MemberSelector({
+  expenseId,
+  currentMemberId,
+  members,
+  onSelect
+}: {
+  expenseId: string;
+  currentMemberId?: string;
+  members: TeamMember[];
+  onSelect: (expenseId: string, memberId?: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedMember = members.find(m => m.id === currentMemberId);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          role="combobox"
+          aria-expanded={open}
+          className="p-0 h-8 font-normal hover:bg-transparent"
+        >
+          {selectedMember ? (
+            <div className="flex items-center gap-2">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={selectedMember.avatar} alt={selectedMember.name} />
+                <AvatarFallback>{selectedMember.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <span className="text-sm">{selectedMember.name}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <User className="h-4 w-4 border rounded-full p-0.5" />
+              <span className="text-sm">Unassigned</span>
+            </div>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="p-0 w-[200px]" align="start">
+        <Command>
+          <CommandInput placeholder="Search team..." />
+          <CommandList>
+            <CommandEmpty>No member found.</CommandEmpty>
+            <CommandGroup>
+              {currentMemberId && (
+                <CommandItem
+                  value="unassign"
+                  onSelect={() => {
+                    onSelect(expenseId, undefined);
+                    setOpen(false);
+                  }}
+                >
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <User className="h-4 w-4 border rounded-full p-0.5" />
+                    <span>Unassign</span>
+                  </div>
+                </CommandItem>
+              )}
+              {members.map((member) => (
+                <CommandItem
+                  key={member.id}
+                  value={member.name}
+                  onSelect={() => {
+                    onSelect(expenseId, member.id);
+                    setOpen(false);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={member.avatar} alt={member.name} />
+                      <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span>{member.name}</span>
+                  </div>
+                  <Check
+                    className={cn(
+                      "ml-auto h-4 w-4",
+                      currentMemberId === member.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -69,7 +69,7 @@ export interface Expense {
   item: string;
   cost: number;
   date: string; // ISO Date string
-  assignedTo?: string; // Name of team member or department
+  assignedTo?: string; // TeamMember ID
   category?: 'infrastructure' | 'software' | 'office' | 'other';
 }
 export interface Subscription {
