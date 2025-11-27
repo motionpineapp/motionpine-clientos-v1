@@ -46,9 +46,17 @@ export function LoginPage() {
     useEffect(() => {
         const checkSetup = async () => {
             try {
-                const res = await fetch('/api/auth/setup-status');
+                const res = await fetch('/api/auth/setup-status', {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
                 if (res.ok) {
                     const data = await res.json();
+                    console.log('Setup status:', data); // Debug log
                     setNeedsSetup(!data.isSetup);
                 }
             } catch (error) {
