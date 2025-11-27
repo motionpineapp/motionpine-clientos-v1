@@ -1,27 +1,17 @@
 import { Hono } from "hono";
-import {
-  UserEntity,
-  ClientEntity,
-  ProjectEntity,
-  ChatEntity,
-  ChatMessageEntity,
-  ExpenseEntity,
-  SubscriptionEntity,
-  TeamMemberEntity,
-  PineTransactionEntity,
-  UserAccount
-} from './entities';
 import { verifyPassword, hashPassword } from './auth-utils';
-import { ok, bad, notFound, isStr, Env } from './core-utils';
+import { ok, bad, notFound, isStr } from './core-utils';
 import type { User, Client, Project, Chat, ChatMessage, Expense, Subscription, TeamMember, PineTransaction } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import * as db from './db';
+
+// Extended Env type to include D1 binding
+interface Env {
+  DB: D1Database;
+  GlobalDurableObject: DurableObjectNamespace;
+}
 
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
-  // Middleware to ensure seed data exists
-  app.use('/api/*', async (c, next) => {
-    await UserEntity.ensureSeed(c.env);
-    await next();
-  });
 
   // --- AUTH ROUTES ---
   app.post('/api/auth/login', async (c) => {
@@ -29,53 +19,73 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     if (!isStr(email) || !isStr(password)) {
       return bad(c, 'Email and password are required.');
     }
-    const userInstance = new UserEntity(c.env, email.toLowerCase());
-    if (!(await userInstance.exists())) {
+
+    const userAccount = await db.getUserByEmail(c.env.DB, email.toLowerCase());
+    if (!userAccount) {
       return notFound(c, 'Invalid credentials.');
     }
-    const userAccount = await userInstance.getState();
-    const isPasswordValid = await verifyPassword(password, userAccount.passwordHash);
 
+    const isPasswordValid = await verifyPassword(password, userAccount.password_hash);
     if (!isPasswordValid) {
       return bad(c, 'Invalid credentials.');
     }
 
-    const { passwordHash, ...userData } = userAccount;
+    const { password_hash, ...userData } = userAccount;
     return ok(c, userData as User);
+  });
+
+  // --- USERS ---
+  app.put('/api/users/:id', async (c) => {
+    const { id } = c.req.param();
+    const userData = await c.req.json<Partial<User>>();
+
+    try {
+      // ID is actually the email (lowercase)
+      const updatedUser = await db.updateUser(c.env.DB, id, userData);
+      return ok(c, updatedUser);
+    } catch (error) {
+      return notFound(c, 'User not found');
+    }
   });
 
   // --- CLIENTS ---
   app.get('/api/clients', async (c) => {
-    const clients = await ClientEntity.list(c.env);
-    return ok(c, clients);
+    const clients = await db.listClients(c.env.DB);
+    return ok(c, { items: clients, next: null });
   });
 
   app.post('/api/clients', async (c) => {
     const clientData = await c.req.json<Omit<Client, 'id'>>();
-    const newClient: Client = { id: uuidv4(), accountStatus: 'pending', ...clientData };
-    await ClientEntity.create(c.env, newClient);
+    const newClient: Client = {
+      id: uuidv4(),
+      accountStatus: 'pending',
+      ...clientData
+    };
+    await db.createClient(c.env.DB, newClient);
     return ok(c, newClient);
   });
 
   app.get('/api/clients/:id', async (c) => {
     const { id } = c.req.param();
-    const client = new ClientEntity(c.env, id);
-    if (!(await client.exists())) return notFound(c, 'Client not found');
-    return ok(c, await client.getState());
+    const client = await db.getClientById(c.env.DB, id);
+    if (!client) return notFound(c, 'Client not found');
+    return ok(c, client);
   });
 
   app.put('/api/clients/:id', async (c) => {
     const { id } = c.req.param();
     const clientData = await c.req.json<Partial<Client>>();
-    const client = new ClientEntity(c.env, id);
-    if (!(await client.exists())) return notFound(c, 'Client not found');
-    await client.patch(clientData);
-    return ok(c, await client.getState());
+    try {
+      const updated = await db.updateClient(c.env.DB, id, clientData);
+      return ok(c, updated);
+    } catch (error) {
+      return notFound(c, 'Client not found');
+    }
   });
 
   app.delete('/api/clients/:id', async (c) => {
     const { id } = c.req.param();
-    const deleted = await ClientEntity.delete(c.env, id);
+    const deleted = await db.deleteClient(c.env.DB, id);
     if (!deleted) return notFound(c, 'Client not found');
     return ok(c, { id });
   });
@@ -83,15 +93,21 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // --- MAGIC LINK FLOW ---
   app.post('/api/clients/:clientId/generate-magic-link', async (c) => {
     const { clientId } = c.req.param();
-    const client = new ClientEntity(c.env, clientId);
-    if (!(await client.exists())) return notFound(c, 'Client not found');
+    const client = await db.getClientById(c.env.DB, clientId);
+    if (!client) return notFound(c, 'Client not found');
 
-    const state = await client.getState();
-    if (state.accountStatus !== 'pending' && state.accountStatus !== 'expired') {
+    if (client.accountStatus !== 'pending' && client.accountStatus !== 'expired') {
       return bad(c, 'Client account is not in a state to generate a link.');
     }
 
-    const token = await client.generateMagicToken();
+    const token = uuidv4();
+    await db.updateClient(c.env.DB, clientId, {
+      magicToken: token,
+      tokenExpiry: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+      accountStatus: 'setup_initiated',
+      tokenUsedAt: undefined,
+    });
+
     return ok(c, { magicPath: `/client/setup?token=${token}&clientId=${clientId}` });
   });
 
@@ -100,14 +116,25 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const token = c.req.query('token');
     if (!token) return bad(c, 'Token is required.');
 
-    const client = new ClientEntity(c.env, clientId);
-    if (!(await client.exists())) return notFound(c, 'Client not found');
+    const client = await db.getClientById(c.env.DB, clientId);
+    if (!client) return notFound(c, 'Client not found');
 
-    const validation = await client.validateToken(token);
-    if (!validation.valid) return notFound(c, validation.reason);
+    // Validate token
+    if (client.accountStatus !== 'setup_initiated') {
+      return notFound(c, 'Invalid account state.');
+    }
+    if (client.magicToken !== token) {
+      return notFound(c, 'Token mismatch.');
+    }
+    if (client.tokenUsedAt) {
+      return notFound(c, 'Token has already been used.');
+    }
+    if (client.tokenExpiry && Date.now() > client.tokenExpiry) {
+      await db.updateClient(c.env.DB, clientId, { accountStatus: 'expired' });
+      return notFound(c, 'Token has expired.');
+    }
 
-    const clientData = await client.getState();
-    const { magicToken, tokenExpiry, tokenUsedAt, ...safeClientData } = clientData;
+    const { magicToken, tokenExpiry, tokenUsedAt, ...safeClientData } = client;
     return ok(c, safeClientData);
   });
 
@@ -117,79 +144,102 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
     if (!isStr(password) || !isStr(token)) return bad(c, 'Password and token are required.');
 
-    const client = new ClientEntity(c.env, clientId);
-    if (!(await client.exists())) return notFound(c, 'Client not found');
+    const client = await db.getClientById(c.env.DB, clientId);
+    if (!client) return notFound(c, 'Client not found');
 
-    const validation = await client.validateToken(token);
-    if (!validation.valid) return bad(c, validation.reason);
+    // Validate token
+    if (client.accountStatus !== 'setup_initiated') return bad(c, 'Invalid account state.');
+    if (client.magicToken !== token) return bad(c, 'Token mismatch.');
+    if (client.tokenUsedAt) return bad(c, 'Token has already been used.');
+    if (client.tokenExpiry && Date.now() > client.tokenExpiry) return bad(c, 'Token has expired.');
 
-    const clientData = await client.getState();
     const passwordHash = await hashPassword(password);
 
-    const newUserAccount: UserAccount = {
+    // Create user account in users table
+    const newUserAccount: db.UserAccount = {
       id: uuidv4(),
-      email: clientData.email,
-      name: clientData.name,
-      company: clientData.company,
+      email: client.email,
+      name: client.name,
+      company: client.company,
       role: 'client',
-      avatar: clientData.avatar,
-      passwordHash,
+      avatar: client.avatar,
+      password_hash: passwordHash,
     };
 
-    await UserEntity.create(c.env, newUserAccount);
-    await client.completeSetup();
+    // Insert user (we need to do this manually since we have password_hash)
+    await c.env.DB.prepare(`
+      INSERT INTO users (email, id, name, role, company, avatar, password_hash)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      newUserAccount.email.toLowerCase(),
+      newUserAccount.id,
+      newUserAccount.name,
+      newUserAccount.role,
+      newUserAccount.company || null,
+      newUserAccount.avatar || null,
+      newUserAccount.password_hash
+    ).run();
 
-    const { passwordHash: _, ...safeUserData } = newUserAccount;
+    // Update client status
+    await db.updateClient(c.env.DB, clientId, {
+      accountStatus: 'active',
+      tokenUsedAt: Date.now(),
+      magicToken: undefined,
+      tokenExpiry: undefined,
+    });
+
+    const { password_hash: _, ...safeUserData } = newUserAccount;
     return ok(c, safeUserData as User);
   });
 
   // --- PROJECTS ---
   app.get('/api/projects', async (c) => {
-    const projects = await ProjectEntity.list(c.env);
-    return ok(c, projects);
+    const projects = await db.listProjects(c.env.DB);
+    return ok(c, { items: projects, next: null });
   });
 
   app.get('/api/projects/client/:clientId', async (c) => {
     const { clientId } = c.req.param();
-    const { items } = await ProjectEntity.list(c.env);
-    const clientProjects = items.filter(p => p.clientId === clientId);
+    const clientProjects = await db.getProjectsByClientId(c.env.DB, clientId);
     return ok(c, clientProjects);
   });
 
   app.post('/api/projects', async (c) => {
     const projectData = await c.req.json<Omit<Project, 'id'>>();
     const newProject: Project = { id: uuidv4(), ...projectData };
-    await ProjectEntity.create(c.env, newProject);
+    await db.createProject(c.env.DB, newProject);
     return ok(c, newProject);
   });
 
   app.get('/api/projects/:id', async (c) => {
     const { id } = c.req.param();
-    const project = new ProjectEntity(c.env, id);
-    if (!(await project.exists())) return notFound(c, 'Project not found');
-    return ok(c, await project.getState());
+    const project = await db.getProjectById(c.env.DB, id);
+    if (!project) return notFound(c, 'Project not found');
+    return ok(c, project);
   });
 
   app.put('/api/projects/:id', async (c) => {
     const { id } = c.req.param();
     const projectData = await c.req.json<Partial<Project>>();
-    const project = new ProjectEntity(c.env, id);
-    if (!(await project.exists())) return notFound(c, 'Project not found');
-    await project.patch(projectData);
-    return ok(c, await project.getState());
+    try {
+      const updated = await db.updateProject(c.env.DB, id, projectData);
+      return ok(c, updated);
+    } catch (error) {
+      return notFound(c, 'Project not found');
+    }
   });
 
   app.delete('/api/projects/:id', async (c) => {
     const { id } = c.req.param();
-    const deleted = await ProjectEntity.delete(c.env, id);
+    const deleted = await db.deleteProject(c.env.DB, id);
     if (!deleted) return notFound(c, 'Project not found');
     return ok(c, { id });
   });
 
   // --- CHAT ---
   app.get('/api/chats', async (c) => {
-    const chats = await ChatEntity.list(c.env);
-    return ok(c, chats);
+    const chats = await db.listChats(c.env.DB);
+    return ok(c, { items: chats, next: null });
   });
 
   app.post('/api/chats', async (c) => {
@@ -198,53 +248,47 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       return bad(c, 'Client ID is required.');
     }
 
-    // Look up client name from ClientEntity
-    const clientInstance = new ClientEntity(c.env, clientId);
-    if (!(await clientInstance.exists())) {
-      // If client doesn't exist, try to find a user with that ID (for client-side self-chat creation)
-      const userInstance = new UserEntity(c.env, clientId); // Assuming client ID can be user email
-      if (!(await userInstance.exists())) {
+    // Look up client name
+    const client = await db.getClientById(c.env.DB, clientId);
+    let title = 'Chat';
+
+    if (client) {
+      title = client.name;
+    } else {
+      // Try to find user
+      const user = await db.getUserByEmail(c.env.DB, clientId);
+      if (user) {
+        title = user.name;
+      } else {
         return notFound(c, 'Associated client or user not found.');
       }
-      const user = await userInstance.getState();
-      const newChat: Chat = {
-        id: `chat-${clientId}`,
-        clientId,
-        title: user.name,
-        lastMessage: 'Chat created.',
-        lastMessageTs: Date.now(),
-        unreadCount: 0,
-      };
-      await ChatEntity.create(c.env, newChat);
-      return ok(c, newChat);
     }
 
-    const client = await clientInstance.getState();
     const newChat: Chat = {
       id: `chat-${clientId}`,
       clientId,
-      title: client.name,
+      title,
       lastMessage: 'Chat created.',
       lastMessageTs: Date.now(),
       unreadCount: 0,
     };
-    await ChatEntity.create(c.env, newChat);
+
+    await db.createChat(c.env.DB, newChat);
     return ok(c, newChat);
   });
 
   app.get('/api/chats/client/:clientId', async (c) => {
     const { clientId } = c.req.param();
-    const chatInstance = new ChatEntity(c.env, `chat-${clientId}`);
-    if (!(await chatInstance.exists())) {
+    const chat = await db.getChatByClientId(c.env.DB, clientId);
+    if (!chat) {
       return notFound(c, 'Chat not found');
     }
-    return ok(c, await chatInstance.getState());
+    return ok(c, chat);
   });
 
   app.get('/api/chats/:chatId/messages', async (c) => {
     const { chatId } = c.req.param();
-    const { items } = await ChatMessageEntity.list(c.env);
-    const messages = items.filter(m => m.chatId === chatId).sort((a, b) => a.ts - b.ts);
+    const messages = await db.getChatMessages(c.env.DB, chatId);
     return ok(c, messages);
   });
 
@@ -252,11 +296,10 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const { chatId } = c.req.param();
     const { text, userId } = await c.req.json<{ text: string; userId: string }>();
 
-    const userInstance = new UserEntity(c.env, userId);
-    if (!(await userInstance.exists())) {
+    const user = await db.getUserByEmail(c.env.DB, userId);
+    if (!user) {
       return notFound(c, 'Sending user not found');
     }
-    const user = await userInstance.getState();
 
     const newMessage: ChatMessage = {
       id: uuidv4(),
@@ -268,29 +311,33 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       senderAvatar: user.avatar,
     };
 
-    await ChatMessageEntity.create(c.env, newMessage);
+    await db.createChatMessage(c.env.DB, newMessage);
 
     // Update chat last message
-    const chatInstance = new ChatEntity(c.env, chatId);
-    await chatInstance.patch({ lastMessage: text, lastMessageTs: newMessage.ts });
+    await db.updateChat(c.env.DB, chatId, {
+      lastMessage: text,
+      lastMessageTs: newMessage.ts
+    });
 
     return ok(c, newMessage);
   });
 
   // --- EXPENSES ---
-  app.get('/api/expenses', async (c) => ok(c, await ExpenseEntity.list(c.env)));
+  app.get('/api/expenses', async (c) => {
+    const expenses = await db.listExpenses(c.env.DB);
+    return ok(c, { items: expenses, next: null });
+  });
 
   app.post('/api/expenses', async (c) => {
     const data = await c.req.json<Omit<Expense, 'id'>>();
     const newExpense: Expense = { id: uuidv4(), ...data };
-    return ok(c, await ExpenseEntity.create(c.env, newExpense));
+    await db.createExpense(c.env.DB, newExpense);
+    return ok(c, newExpense);
   });
 
   app.put('/api/expenses/:id', async (c) => {
     const { id } = c.req.param();
     const data = await c.req.json<Partial<Expense>>();
-    const expense = new ExpenseEntity(c.env, id);
-    if (!(await expense.exists())) return notFound(c, 'Expense not found');
 
     // Handle explicit null for unassignment
     const updateData = { ...data };
@@ -298,42 +345,50 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       updateData.assignedTo = undefined;
     }
 
-    await expense.patch(updateData);
-    return ok(c, await expense.getState());
+    try {
+      const updated = await db.updateExpense(c.env.DB, id, updateData);
+      return ok(c, updated);
+    } catch (error) {
+      return notFound(c, 'Expense not found');
+    }
   });
 
   // --- SUBSCRIPTIONS ---
-  app.get('/api/subscriptions', async (c) => ok(c, await SubscriptionEntity.list(c.env)));
+  app.get('/api/subscriptions', async (c) => {
+    const subscriptions = await db.listSubscriptions(c.env.DB);
+    return ok(c, { items: subscriptions, next: null });
+  });
 
   app.post('/api/subscriptions', async (c) => {
     const data = await c.req.json<Omit<Subscription, 'id'>>();
     const newSub: Subscription = { id: uuidv4(), ...data };
-    return ok(c, await SubscriptionEntity.create(c.env, newSub));
+    await db.createSubscription(c.env.DB, newSub);
+    return ok(c, newSub);
   });
 
   // --- TEAM ---
-  app.get('/api/team', async (c) => ok(c, await TeamMemberEntity.list(c.env)));
+  app.get('/api/team', async (c) => {
+    const team = await db.listTeamMembers(c.env.DB);
+    return ok(c, { items: team, next: null });
+  });
 
   app.post('/api/team', async (c) => {
     const data = await c.req.json<Omit<TeamMember, 'id'>>();
     const newMember: TeamMember = { id: uuidv4(), ...data };
-    return ok(c, await TeamMemberEntity.create(c.env, newMember));
+    await db.createTeamMember(c.env.DB, newMember);
+    return ok(c, newMember);
   });
 
   // --- PINES ---
   app.get('/api/pines/transactions/:clientId', async (c) => {
     const { clientId } = c.req.param();
-    const { items } = await PineTransactionEntity.list(c.env);
-    const transactions = items.filter(tx => tx.clientId === clientId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const transactions = await db.getTransactionsByClientId(c.env.DB, clientId);
     return ok(c, transactions);
   });
 
   app.get('/api/pines/balance/:clientId', async (c) => {
     const { clientId } = c.req.param();
-    const { items } = await PineTransactionEntity.list(c.env);
-    const balance = items
-      .filter(tx => tx.clientId === clientId)
-      .reduce((acc, tx) => acc + tx.amount, 0);
+    const balance = await db.getClientBalance(c.env.DB, clientId);
     return ok(c, balance);
   });
 }
