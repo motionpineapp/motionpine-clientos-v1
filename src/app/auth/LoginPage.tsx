@@ -57,8 +57,8 @@ export function LoginPage() {
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    console.log('Setup status:', data); // Debug log
-                    setNeedsSetup(!data.isSetup);
+                    console.log('Setup status:', data);
+                    setNeedsSetup(!data.data.isSetup); // FIXED: access nested data.data.isSetup
                 }
             } catch (error) {
                 console.error('Failed to check setup status:', error);
