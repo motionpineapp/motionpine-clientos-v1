@@ -1,7 +1,7 @@
 /**
  * Database Layer for MotionPine ClientOS
  * This file contains all SQL queries and database operations
- * Replaces the Durable Objects entity system with D1 SQL
+ * Uses SQL column aliases to map snake_case to camelCase for TypeScript compatibility
  */
 
 import type {
@@ -69,12 +69,49 @@ export async function updateUser(db: D1Database, email: string, data: Partial<Us
 // ============================================================================
 
 export async function listClients(db: D1Database): Promise<Client[]> {
-    const result = await db.prepare('SELECT * FROM clients ORDER BY created_at DESC').all<Client>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      name,
+      company,
+      email,
+      status,
+      account_status as accountStatus,
+      total_projects as totalProjects,
+      total_revenue as totalRevenue,
+      joined_at as joinedAt,
+      avatar,
+      magic_token as magicToken,
+      token_expiry as tokenExpiry,
+      token_used_at as tokenUsedAt
+    FROM clients 
+    ORDER BY created_at DESC
+  `).all<Client>();
+
     return result.results || [];
 }
 
 export async function getClientById(db: D1Database, id: string): Promise<Client | null> {
-    const result = await db.prepare('SELECT * FROM clients WHERE id = ? LIMIT 1').bind(id).first<Client>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      name,
+      company,
+      email,
+      status,
+      account_status as accountStatus,
+      total_projects as totalProjects,
+      total_revenue as totalRevenue,
+      joined_at as joinedAt,
+      avatar,
+      magic_token as magicToken,
+      token_expiry as tokenExpiry,
+      token_used_at as tokenUsedAt
+    FROM clients 
+    WHERE id = ? 
+    LIMIT 1
+  `).bind(id).first<Client>();
+
     return result || null;
 }
 
@@ -134,19 +171,52 @@ export async function deleteClient(db: D1Database, id: string): Promise<boolean>
 // ============================================================================
 
 export async function listProjects(db: D1Database): Promise<Project[]> {
-    const result = await db.prepare('SELECT * FROM projects ORDER BY created_at DESC').all<Project>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      title,
+      client_id as clientId,
+      client_name as clientName,
+      status,
+      created_at as createdAt
+    FROM projects 
+    ORDER BY created_at DESC
+  `).all<Project>();
+
     return result.results || [];
 }
 
 export async function getProjectsByClientId(db: D1Database, clientId: string): Promise<Project[]> {
-    const result = await db.prepare(
-        'SELECT * FROM projects WHERE client_id = ? ORDER BY created_at DESC'
-    ).bind(clientId).all<Project>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      title,
+      client_id as clientId,
+      client_name as clientName,
+      status,
+      created_at as createdAt
+    FROM projects 
+    WHERE client_id = ? 
+    ORDER BY created_at DESC
+  `).bind(clientId).all<Project>();
+
     return result.results || [];
 }
 
 export async function getProjectById(db: D1Database, id: string): Promise<Project | null> {
-    const result = await db.prepare('SELECT * FROM projects WHERE id = ? LIMIT 1').bind(id).first<Project>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      title,
+      client_id as clientId,
+      client_name as clientName,
+      status,
+      created_at as createdAt
+    FROM projects 
+    WHERE id = ? 
+    LIMIT 1
+  `).bind(id).first<Project>();
+
     return result || null;
 }
 
@@ -195,14 +265,35 @@ export async function deleteProject(db: D1Database, id: string): Promise<boolean
 // ============================================================================
 
 export async function listChats(db: D1Database): Promise<Chat[]> {
-    const result = await db.prepare('SELECT * FROM chats ORDER BY last_message_ts DESC').all<Chat>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      client_id as clientId,
+      title,
+      last_message as lastMessage,
+      last_message_ts as lastMessageTs,
+      unread_count as unreadCount
+    FROM chats 
+    ORDER BY last_message_ts DESC
+  `).all<Chat>();
+
     return result.results || [];
 }
 
 export async function getChatByClientId(db: D1Database, clientId: string): Promise<Chat | null> {
-    const result = await db.prepare(
-        'SELECT * FROM chats WHERE client_id = ? LIMIT 1'
-    ).bind(clientId).first<Chat>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      client_id as clientId,
+      title,
+      last_message as lastMessage,
+      last_message_ts as lastMessageTs,
+      unread_count as unreadCount
+    FROM chats 
+    WHERE client_id = ? 
+    LIMIT 1
+  `).bind(clientId).first<Chat>();
+
     return result || null;
 }
 
@@ -241,9 +332,20 @@ export async function updateChat(db: D1Database, id: string, data: Partial<Chat>
 // ============================================================================
 
 export async function getChatMessages(db: D1Database, chatId: string): Promise<ChatMessage[]> {
-    const result = await db.prepare(
-        'SELECT * FROM chat_messages WHERE chat_id = ? ORDER BY ts ASC'
-    ).bind(chatId).all<ChatMessage>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      chat_id as chatId,
+      user_id as userId,
+      text,
+      ts,
+      sender_name as senderName,
+      sender_avatar as senderAvatar
+    FROM chat_messages 
+    WHERE chat_id = ? 
+    ORDER BY ts ASC
+  `).bind(chatId).all<ChatMessage>();
+
     return result.results || [];
 }
 
@@ -269,7 +371,17 @@ export async function createChatMessage(db: D1Database, message: ChatMessage): P
 // ============================================================================
 
 export async function listExpenses(db: D1Database): Promise<Expense[]> {
-    const result = await db.prepare('SELECT * FROM expenses ORDER BY date DESC').all<Expense>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      item,
+      cost,
+      date,
+      assigned_to as assignedTo
+    FROM expenses 
+    ORDER BY date DESC
+  `).all<Expense>();
+
     return result.results || [];
 }
 
@@ -302,7 +414,18 @@ export async function updateExpense(db: D1Database, id: string, data: Partial<Ex
 
     await db.prepare(`UPDATE expenses SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run();
 
-    const result = await db.prepare('SELECT * FROM expenses WHERE id = ? LIMIT 1').bind(id).first<Expense>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      item,
+      cost,
+      date,
+      assigned_to as assignedTo
+    FROM expenses 
+    WHERE id = ? 
+    LIMIT 1
+  `).bind(id).first<Expense>();
+
     if (!result) throw new Error('Expense not found after update');
     return result;
 }
@@ -312,7 +435,18 @@ export async function updateExpense(db: D1Database, id: string, data: Partial<Ex
 // ============================================================================
 
 export async function listSubscriptions(db: D1Database): Promise<Subscription[]> {
-    const result = await db.prepare('SELECT * FROM subscriptions ORDER BY created_at DESC').all<Subscription>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      name,
+      price,
+      billing_cycle as billingCycle,
+      next_billing_date as nextBillingDate,
+      status
+    FROM subscriptions 
+    ORDER BY created_at DESC
+  `).all<Subscription>();
+
     return result.results || [];
 }
 
@@ -337,7 +471,19 @@ export async function createSubscription(db: D1Database, subscription: Subscript
 // ============================================================================
 
 export async function listTeamMembers(db: D1Database): Promise<TeamMember[]> {
-    const result = await db.prepare('SELECT * FROM team_members ORDER BY created_at DESC').all<TeamMember>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      name,
+      role,
+      email,
+      status,
+      joined_at as joinedAt,
+      avatar
+    FROM team_members 
+    ORDER BY created_at DESC
+  `).all<TeamMember>();
+
     return result.results || [];
 }
 
@@ -363,9 +509,19 @@ export async function createTeamMember(db: D1Database, member: TeamMember): Prom
 // ============================================================================
 
 export async function getTransactionsByClientId(db: D1Database, clientId: string): Promise<PineTransaction[]> {
-    const result = await db.prepare(
-        'SELECT * FROM pine_transactions WHERE client_id = ? ORDER BY date DESC'
-    ).bind(clientId).all<PineTransaction>();
+    const result = await db.prepare(`
+    SELECT 
+      id,
+      client_id as clientId,
+      type,
+      amount,
+      description,
+      date
+    FROM pine_transactions 
+    WHERE client_id = ? 
+    ORDER BY date DESC
+  `).bind(clientId).all<PineTransaction>();
+
     return result.results || [];
 }
 
