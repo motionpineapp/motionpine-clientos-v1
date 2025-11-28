@@ -25,63 +25,44 @@ import { ExpensesPage } from '@/app/admin/expenses/ExpensesPage';
 import { TeamsPage } from '@/app/admin/teams/TeamsPage';
 import { SettingsPage } from '@/app/admin/settings/SettingsPage';
 import { ClientProjectsPage } from '@/app/client/projects/ClientProjectsPage';
-import { ClientChatPage } from '@/app/client/chat/ClientChatPage';
-import { IntakePage } from '@/app/client/intake/IntakePage';
-import { ClientSettingsPage } from '@/app/client/settings/ClientSettingsPage';
-import { WalletPage } from '@/app/client/wallet/WalletPage';
-import { Toaster } from '@/components/ui/sonner';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-function RootLayout() {
-  return (
-    <ErrorBoundary>
-      <Toaster richColors position="top-center" />
-      <Outlet />
-    </ErrorBoundary>
-  );
-}
-
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <RootLayout />,
-    errorElement: <RouteErrorBoundary />,
-    children: [
-      { index: true, element: <HomePage />, errorElement: <RouteErrorBoundary /> },
-      { path: "login", element: <LoginPage />, errorElement: <RouteErrorBoundary /> },
-      { path: "client/setup", element: <SetupPage />, errorElement: <RouteErrorBoundary /> },
-      // Admin Routes
-      {
-        path: "admin",
-        element: <ProtectedRoute role="admin" />,
-        errorElement: <RouteErrorBoundary />,
-        children: [
-          { path: "dashboard", element: <AdminDashboard /> },
-          { path: "clients", element: <ClientsPage /> },
-          { path: "projects", element: <ProjectsPage /> },
-          { path: "projects/:id", element: <ProjectDetailPage /> },
-          { path: "chat", element: <ChatPage /> },
-          { path: "expenses", element: <ExpensesPage /> },
-          { path: "teams", element: <TeamsPage /> },
-          { path: "settings", element: <SettingsPage /> },
-        ]
-      },
-      // Client Routes
-      {
-        path: "client",
-        element: <ProtectedRoute role="client" />,
-        errorElement: <RouteErrorBoundary />,
-        children: [
-          { path: "dashboard", element: <ClientDashboard /> },
-          { path: "projects", element: <ClientProjectsPage /> },
-          { path: "chat", element: <ClientChatPage /> },
-          { path: "intake", element: <IntakePage /> },
-          { path: "settings", element: <ClientSettingsPage /> },
-          { path: "wallet", element: <WalletPage /> },
-        ]
-      },
-      // Fallback
-      { path: "*", element: <Navigate to="/" replace /> },
-    ]
+errorElement: <RouteErrorBoundary />,
+  children: [
+    { index: true, element: <HomePage />, errorElement: <RouteErrorBoundary /> },
+    { path: "login", element: <LoginPage />, errorElement: <RouteErrorBoundary /> },
+    { path: "client/setup", element: <SetupPage />, errorElement: <RouteErrorBoundary /> },
+    // Admin Routes
+    {
+      path: "admin",
+      element: <ProtectedRoute role="admin" />,
+      errorElement: <RouteErrorBoundary />,
+      children: [
+        { path: "dashboard", element: <AdminDashboard /> },
+        { path: "clients", element: <ClientsPage /> },
+        { path: "projects", element: <ProjectsPage /> },
+        { path: "projects/:id", element: <ProjectDetailPage /> },
+        { path: "chat", element: <ChatPage /> },
+        { path: "expenses", element: <ExpensesPage /> },
+        { path: "teams", element: <TeamsPage /> },
+        { path: "settings", element: <SettingsPage /> },
+      ]
+    },
+    // Client Routes
+    {
+      path: "client",
+      element: <ProtectedRoute role="client" />,
+      errorElement: <RouteErrorBoundary />,
+      children: [
+        { path: "dashboard", element: <ClientDashboard /> },
+        { path: "projects", element: <ClientProjectsPage /> },
+        { path: "chat", element: <ClientChatPage /> },
+        { path: "intake", element: <IntakePage /> },
+        { path: "settings", element: <ClientSettingsPage /> },
+        { path: "wallet", element: <WalletPage /> },
+      ]
+    },
+    // Fallback
+    { path: "*", element: <Navigate to="/" replace /> },
+  ]
   }
 ]);
 createRoot(document.getElementById('root')!).render(

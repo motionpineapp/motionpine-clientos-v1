@@ -1,6 +1,7 @@
 /* Edit this file to customize the sidebar */
 import React from "react";
 import { Home, Layers, Compass, Star, Settings, LifeBuoy } from "lucide-react";
+import { useSettingsStore } from "@/services/settings";
 import {
   Sidebar,
   SidebarContent,
@@ -18,12 +19,18 @@ import {
 } from "@/components/ui/sidebar";
 
 export function AppSidebar(): JSX.Element {
+  const settings = useSettingsStore(s => s.settings);
+
   return (
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1">
-          <div className="h-6 w-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-500" />
-          <span className="text-sm font-medium">Template</span>
+          {settings.logo_url ? (
+            <img src={settings.logo_url} alt="Logo" className="h-8 w-8 object-contain rounded-md" />
+          ) : (
+            <div className="h-6 w-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-500" />
+          )}
+          <span className="text-sm font-medium truncate">{settings.company_name}</span>
         </div>
         <SidebarInput placeholder="Search" />
       </SidebarHeader>
@@ -69,7 +76,7 @@ export function AppSidebar(): JSX.Element {
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <a href="#"><Settings /> <span>Settings</span></a>
+                <a href="/admin/settings"><Settings /> <span>Settings</span></a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

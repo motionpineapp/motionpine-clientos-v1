@@ -162,3 +162,20 @@ CREATE TABLE IF NOT EXISTS pine_transactions (
 
 CREATE INDEX IF NOT EXISTS idx_pine_transactions_client_id ON pine_transactions(client_id);
 CREATE INDEX IF NOT EXISTS idx_pine_transactions_date ON pine_transactions(date);
+
+-- ============================================================================
+-- SYSTEM SETTINGS TABLE (Singleton)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS system_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1), -- Enforce singleton row
+    company_name TEXT DEFAULT 'MotionPine',
+    logo_url TEXT,
+    favicon_url TEXT,
+    meta_title TEXT DEFAULT 'MotionPine ClientOS',
+    meta_description TEXT DEFAULT 'Client Management System',
+    updated_at INTEGER DEFAULT (unixepoch())
+);
+
+-- Insert default settings if not exists
+INSERT OR IGNORE INTO system_settings (id, company_name, meta_title, meta_description) 
+VALUES (1, 'MotionPine', 'MotionPine ClientOS', 'Client Management System');

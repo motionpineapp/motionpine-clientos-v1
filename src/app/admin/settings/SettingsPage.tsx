@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '@/services/auth';
+import { useSettingsStore } from '@/services/settings';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,20 +9,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { User, Lock, Bell, Shield, Loader2 } from 'lucide-react';
+import { User, Lock, Bell, Shield, Loader2, Palette, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/FileUpload';
 
 export function SettingsPage() {
     const user = useAuthStore(s => s.user);
     const updateProfile = useAuthStore(s => s.updateProfile);
+
+    const { settings, updateSettings, isLoading: isSettingsLoading } = useSettingsStore();
+
     const [isLoading, setIsLoading] = useState(false);
 
-    // Local state for form fields
+    // Local state for profile form
     const [name, setName] = useState(user?.name || '');
     const [company, setCompany] = useState(user?.company || '');
 
-    // Update local state when user changes (e.g. on initial load or re-fetch)
+    // Local state for branding form
+    const [brandingCompany, setBrandingCompany] = useState(settings.company_name);
+    const [metaTitle, setMetaTitle] = useState(settings.meta_title);
+    const [metaDesc, setMetaDesc] = useState(settings.meta_description);
+
+    // Update local state when user/settings change
     React.useEffect(() => {
         if (user) {
             setName(user.name);
@@ -29,14 +38,37 @@ export function SettingsPage() {
         }
     }, [user]);
 
-    const handleSave = async () => {
+    React.useEffect(() => {
+        setBrandingCompany(settings.company_name);
+        setMetaTitle(settings.meta_title);
+        setMetaDesc(settings.meta_description);
+    }, [settings]);
+
+    const handleSaveProfile = async () => {
         setIsLoading(true);
         try {
             await updateProfile({ name, company });
-            toast.success('Settings saved successfully');
+            toast.success('Profile saved successfully');
         } catch (error) {
             console.error('Failed to update profile:', error);
-            toast.error('Failed to save settings');
+            toast.error('Failed to save profile');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSaveBranding = async () => {
+        setIsLoading(true);
+        try {
+            await updateSettings({
+                company_name: brandingCompany,
+                meta_title: metaTitle,
+                meta_description: metaDesc
+            });
+            toast.success('Branding settings saved');
+        } catch (error) {
+            console.error('Failed to update branding:', error);
+            toast.error('Failed to save branding settings');
         } finally {
             setIsLoading(false);
         }
@@ -47,13 +79,17 @@ export function SettingsPage() {
             <div className="space-y-8 animate-fade-in max-w-4xl">
                 <PageHeader
                     title="Settings"
-                    description="Manage your account preferences and security settings."
+                    description="Manage your account preferences and application branding."
                 />
                 <Tabs defaultValue="profile" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 lg:w-[400px] mb-8">
+                    <TabsList className="grid w-full grid-cols-4 lg:w-[500px] mb-8">
                         <TabsTrigger value="profile" className="gap-2">
                             <User className="h-4 w-4" />
                             Profile
+                        </TabsTrigger>
+                        <TabsTrigger value="branding" className="gap-2">
+                            <Palette className="h-4 w-4" />
+                            Branding
                         </TabsTrigger>
                         <TabsTrigger value="security" className="gap-2">
                             <Lock className="h-4 w-4" />
@@ -61,9 +97,11 @@ export function SettingsPage() {
                         </TabsTrigger>
                         <TabsTrigger value="notifications" className="gap-2">
                             <Bell className="h-4 w-4" />
-                            Notifications
+                            Notify
                         </TabsTrigger>
                     </TabsList>
+
+                    {/* PROFILE TAB */}
                     <TabsContent value="profile" className="space-y-6">
                         <Card className="border-gray-100 shadow-sm">
                             <CardHeader>
@@ -119,13 +157,129 @@ export function SettingsPage() {
                                 </div>
                             </CardContent>
                             <CardFooter className="bg-gray-50/50 border-t border-gray-100 flex justify-end p-4">
-                                <Button onClick={handleSave} disabled={isLoading}>
+                                <Button onClick={handleSaveProfile} disabled={isLoading}>
                                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Save Changes
                                 </Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
+
+                    {/* BRANDING TAB */}
+                    <TabsContent value="branding" className="space-y-6">
+                        <Card className="border-gray-100 shadow-sm">
+                            <CardHeader>
+                                <CardTitle>Application Branding</CardTitle>
+                                <CardDescription>Customize the look and feel of your application.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-8">
+                                {/* Logo Section */}
+                                <div className="grid gap-6 md:grid-cols-2">
+                                    <div className="space-y-4">
+                                        <Label className="text-base">Application Logo</Label>
+                                        <div className="flex items-start gap-4">
+                                            <div className="h-16 w-16 rounded-lg border border-dashed border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden">
+                                                {settings.logo_url ? (
+                                                    <img src={settings.logo_url} alt="Logo" className="h-full w-full object-contain" />
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">No Logo</span>
+                                                )}
+                                            </div>
+                                            <div className="space-y-2 flex-1">
+                                                <FileUpload
+                                                    accept="image/*"
+                                                    maxSize={2}
+                                                    showPreview={false}
+                                                    onUploadComplete={(url) => {
+                                                        updateSettings({ logo_url: url });
+                                                        toast.success('Logo updated');
+                                                    }}
+                                                />
+                                                <p className="text-xs text-muted-foreground">Displayed in sidebar and emails. Max 2MB.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <Label className="text-base">Favicon</Label>
+                                        <div className="flex items-start gap-4">
+                                            <div className="h-16 w-16 rounded-lg border border-dashed border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden">
+                                                {settings.favicon_url ? (
+                                                    <img src={settings.favicon_url} alt="Favicon" className="h-8 w-8 object-contain" />
+                                                ) : (
+                                                    <Globe className="h-8 w-8 text-gray-300" />
+                                                )}
+                                            </div>
+                                            <div className="space-y-2 flex-1">
+                                                <FileUpload
+                                                    accept="image/*"
+                                                    maxSize={1}
+                                                    showPreview={false}
+                                                    onUploadComplete={(url) => {
+                                                        updateSettings({ favicon_url: url });
+                                                        toast.success('Favicon updated');
+                                                    }}
+                                                />
+                                                <p className="text-xs text-muted-foreground">Browser tab icon. Recommended 32x32px.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* General Settings */}
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="branding-company">Company Name</Label>
+                                        <Input
+                                            id="branding-company"
+                                            value={brandingCompany}
+                                            onChange={(e) => setBrandingCompany(e.target.value)}
+                                            placeholder="e.g. Acme Corp"
+                                        />
+                                        <p className="text-xs text-muted-foreground">Used in page titles and footer.</p>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* SEO Settings */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-medium">SEO & Meta Data</h3>
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="meta-title">Meta Title</Label>
+                                            <Input
+                                                id="meta-title"
+                                                value={metaTitle}
+                                                onChange={(e) => setMetaTitle(e.target.value)}
+                                                placeholder="App Name - Slogan"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="meta-desc">Meta Description</Label>
+                                            <Input
+                                                id="meta-desc"
+                                                value={metaDesc}
+                                                onChange={(e) => setMetaDesc(e.target.value)}
+                                                placeholder="Brief description of your app..."
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </CardContent>
+                            <CardFooter className="bg-gray-50/50 border-t border-gray-100 flex justify-end p-4">
+                                <Button onClick={handleSaveBranding} disabled={isLoading || isSettingsLoading}>
+                                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Branding
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </TabsContent>
+
+                    {/* SECURITY TAB */}
                     <TabsContent value="security" className="space-y-6">
                         <Card className="border-gray-100 shadow-sm">
                             <CardHeader>
@@ -147,7 +301,7 @@ export function SettingsPage() {
                                 </div>
                             </CardContent>
                             <CardFooter className="bg-gray-50/50 border-t border-gray-100 flex justify-end p-4">
-                                <Button onClick={handleSave} disabled={isLoading}>
+                                <Button onClick={handleSaveProfile} disabled={isLoading}>
                                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Update Password
                                 </Button>
@@ -168,6 +322,8 @@ export function SettingsPage() {
                             </CardContent>
                         </Card>
                     </TabsContent>
+
+                    {/* NOTIFICATIONS TAB */}
                     <TabsContent value="notifications">
                         <Card className="border-gray-100 shadow-sm">
                             <CardHeader>
