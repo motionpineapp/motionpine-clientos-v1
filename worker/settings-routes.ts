@@ -3,6 +3,7 @@ import { ok, bad, isStr } from './core-utils';
 
 interface Env {
     DB: D1Database;
+    R2_BUCKET: R2Bucket;
 }
 
 export interface SystemSettings {
@@ -53,10 +54,26 @@ export function settingsRoutes(app: Hono<{ Bindings: Env }>) {
             // Validate inputs (basic)
             if (data.company_name && !isStr(data.company_name)) return bad(c, 'Invalid company name');
 
-            // Construct update query dynamically or just update all fields
-            // Since it's a singleton, we can just use a fixed update query with COALESCE to keep existing values if not provided
-            // But for simplicity and correctness with partial updates, let's fetch current first or use UPSERT logic.
-            // SQLite UPSERT: INSERT ... ON CONFLICT DO UPDATE
+            // Fetch current settings to check for old files
+            const currentSettings = await c.env.DB.prepare('SELECT * FROM system_settings WHERE id = 1').first<SystemSettings>();
+
+            if (currentSettings) {
+                const { deleteFileFromUrl } = await import('./file-utils');
+
+                // Check Logo
+                if (data.logo_url !== undefined && data.logo_url !== currentSettings.logo_url) {
+                    if (currentSettings.logo_url) {
+                        await deleteFileFromUrl(currentSettings.logo_url, c.env.R2_BUCKET);
+                    }
+                }
+
+                // Check Favicon
+                if (data.favicon_url !== undefined && data.favicon_url !== currentSettings.favicon_url) {
+                    if (currentSettings.favicon_url) {
+                        await deleteFileFromUrl(currentSettings.favicon_url, c.env.R2_BUCKET);
+                    }
+                }
+            }
 
             await c.env.DB.prepare(`
                 INSERT INTO system_settings (id, company_name, logo_url, favicon_url, meta_title, meta_description, updated_at)

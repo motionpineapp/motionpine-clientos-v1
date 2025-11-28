@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { User, Lock, Bell, Shield, Loader2, Palette, Globe } from 'lucide-react';
+import { User, Lock, Bell, Shield, Loader2, Palette, Globe, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/FileUpload';
 
@@ -74,6 +74,48 @@ export function SettingsPage() {
         }
     };
 
+    const handleRemoveAvatar = async () => {
+        if (!confirm('Are you sure you want to remove your avatar?')) return;
+        setIsLoading(true);
+        try {
+            await updateProfile({ avatar: null });
+            toast.success('Avatar removed');
+        } catch (error) {
+            console.error('Failed to remove avatar:', error);
+            toast.error('Failed to remove avatar');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleRemoveLogo = async () => {
+        if (!confirm('Are you sure you want to remove the logo?')) return;
+        setIsLoading(true);
+        try {
+            await updateSettings({ logo_url: null });
+            toast.success('Logo removed');
+        } catch (error) {
+            console.error('Failed to remove logo:', error);
+            toast.error('Failed to remove logo');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleRemoveFavicon = async () => {
+        if (!confirm('Are you sure you want to remove the favicon?')) return;
+        setIsLoading(true);
+        try {
+            await updateSettings({ favicon_url: null });
+            toast.success('Favicon removed');
+        } catch (error) {
+            console.error('Failed to remove favicon:', error);
+            toast.error('Failed to remove favicon');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
             <div className="space-y-8 animate-fade-in max-w-4xl">
@@ -115,16 +157,30 @@ export function SettingsPage() {
                                         <AvatarFallback className="text-xl">{user?.name?.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <div className="space-y-2">
-                                        <FileUpload
-                                            accept="image/*"
-                                            maxSize={2}
-                                            showPreview={false}
-                                            onUploadComplete={(url) => {
-                                                updateProfile({ avatar: url });
-                                                toast.success('Avatar updated successfully');
-                                            }}
-                                            className="w-full max-w-xs"
-                                        />
+                                        <div className="flex items-center gap-2">
+                                            <FileUpload
+                                                accept="image/*"
+                                                maxSize={2}
+                                                showPreview={false}
+                                                onUploadComplete={(url) => {
+                                                    updateProfile({ avatar: url });
+                                                    toast.success('Avatar updated successfully');
+                                                }}
+                                                className="w-full max-w-xs"
+                                            />
+                                            {user?.avatar && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                    onClick={handleRemoveAvatar}
+                                                    disabled={isLoading}
+                                                    title="Remove Avatar"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
                                         <p className="text-xs text-muted-foreground">JPG, GIF or PNG. Max size of 2MB</p>
                                     </div>
                                 </div>
@@ -186,15 +242,29 @@ export function SettingsPage() {
                                                 )}
                                             </div>
                                             <div className="space-y-2 flex-1">
-                                                <FileUpload
-                                                    accept="image/*"
-                                                    maxSize={2}
-                                                    showPreview={false}
-                                                    onUploadComplete={(url) => {
-                                                        updateSettings({ logo_url: url });
-                                                        toast.success('Logo updated');
-                                                    }}
-                                                />
+                                                <div className="flex items-center gap-2">
+                                                    <FileUpload
+                                                        accept="image/*"
+                                                        maxSize={2}
+                                                        showPreview={false}
+                                                        onUploadComplete={(url) => {
+                                                            updateSettings({ logo_url: url });
+                                                            toast.success('Logo updated');
+                                                        }}
+                                                    />
+                                                    {settings.logo_url && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                            onClick={handleRemoveLogo}
+                                                            disabled={isLoading}
+                                                            title="Remove Logo"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
                                                 <p className="text-xs text-muted-foreground">Displayed in sidebar and emails. Max 2MB.</p>
                                             </div>
                                         </div>
@@ -211,15 +281,29 @@ export function SettingsPage() {
                                                 )}
                                             </div>
                                             <div className="space-y-2 flex-1">
-                                                <FileUpload
-                                                    accept="image/*"
-                                                    maxSize={1}
-                                                    showPreview={false}
-                                                    onUploadComplete={(url) => {
-                                                        updateSettings({ favicon_url: url });
-                                                        toast.success('Favicon updated');
-                                                    }}
-                                                />
+                                                <div className="flex items-center gap-2">
+                                                    <FileUpload
+                                                        accept="image/*"
+                                                        maxSize={1}
+                                                        showPreview={false}
+                                                        onUploadComplete={(url) => {
+                                                            updateSettings({ favicon_url: url });
+                                                            toast.success('Favicon updated');
+                                                        }}
+                                                    />
+                                                    {settings.favicon_url && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                            onClick={handleRemoveFavicon}
+                                                            disabled={isLoading}
+                                                            title="Remove Favicon"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
                                                 <p className="text-xs text-muted-foreground">Browser tab icon. Recommended 32x32px.</p>
                                             </div>
                                         </div>

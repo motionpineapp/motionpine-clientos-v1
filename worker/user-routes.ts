@@ -9,6 +9,7 @@ import * as db from './db';
 interface Env {
     DB: D1Database;
     GlobalDurableObject: DurableObjectNamespace;
+    R2_BUCKET: R2Bucket;
 }
 
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
@@ -87,10 +88,22 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const userData = await c.req.json<Partial<User>>();
 
         try {
+            // Fetch current user to check for old avatar
+            const currentUser = await db.getUserByEmail(c.env.DB, id);
+
+            if (currentUser && userData.avatar !== undefined && userData.avatar !== currentUser.avatar) {
+                // Avatar changed, delete old one if it exists
+                if (currentUser.avatar) {
+                    const { deleteFileFromUrl } = await import('./file-utils');
+                    await deleteFileFromUrl(currentUser.avatar, c.env.R2_BUCKET);
+                }
+            }
+
             // ID is actually the email (lowercase)
             const updatedUser = await db.updateUser(c.env.DB, id, userData);
             return ok(c, updatedUser);
         } catch (error) {
+            console.error('Update user error:', error);
             return notFound(c, 'User not found');
         }
     });
