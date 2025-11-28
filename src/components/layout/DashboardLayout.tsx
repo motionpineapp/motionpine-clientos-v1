@@ -14,6 +14,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useAuthStore } from '@/services/auth';
+import { useSettingsStore } from '@/services/settings';
 import {
   Sidebar,
   SidebarContent,
@@ -40,6 +41,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const user = useAuthStore(s => s.user);
   const logout = useAuthStore(s => s.logout);
+  const settings = useSettingsStore(s => s.settings);
 
   // Guard against rendering the layout without a user, which can cause hook errors.
   if (!user) {
@@ -83,12 +85,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <Sidebar collapsible="icon" className="border-r border-gray-100 bg-sidebar-background">
         <SidebarHeader className="h-16 flex items-center justify-center border-b border-gray-50/50">
           <div className="flex items-center gap-2 px-2 w-full">
-            <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-lg">M</span>
-            </div>
-            <span className="font-bold text-lg tracking-tight group-data-[collapsible=icon]:hidden">
-              MotionPine
-            </span>
+            {settings.logo_url ? (
+              <img
+                src={settings.logo_url}
+                alt={settings.company_name}
+                className="h-8 w-auto object-contain max-w-[180px]"
+              />
+            ) : (
+              <>
+                <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center shrink-0">
+                  <span className="text-white font-bold text-lg">{settings.company_name.charAt(0)}</span>
+                </div>
+                <span className="font-bold text-lg tracking-tight group-data-[collapsible=icon]:hidden">
+                  {settings.company_name}
+                </span>
+              </>
+            )}
           </div>
         </SidebarHeader>
         <SidebarContent className="p-2">
