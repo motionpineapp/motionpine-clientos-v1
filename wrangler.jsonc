@@ -24,6 +24,12 @@
       "database_id": "b02f97da-b622-44c8-8437-b5e7efde040f"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "motionpine-bucket"
+    }
+  ],
   "durable_objects": {
     "bindings": [
       {

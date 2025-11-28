@@ -4,24 +4,25 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { userRoutes } from './user-routes';
+import { uploadRoutes } from './upload-routes';
 import { Env, GlobalDurableObject } from './core-utils';
 
 // Need to export GlobalDurableObject to make it available in wrangler
 export { GlobalDurableObject };
 export interface ClientErrorReport {
-    message: string;
-    url: string;
-    userAgent: string;
-    timestamp: string;
-    stack?: string;
-    componentStack?: string;
-    errorBoundary?: boolean;
-    errorBoundaryProps?: Record<string, unknown>;
-    source?: string;
-    lineno?: number;
-    colno?: number;
-    error?: unknown;
-  }
+  message: string;
+  url: string;
+  userAgent: string;
+  timestamp: string;
+  stack?: string;
+  componentStack?: string;
+  errorBoundary?: boolean;
+  errorBoundaryProps?: Record<string, unknown>;
+  source?: string;
+  lineno?: number;
+  colno?: number;
+  error?: unknown;
+}
 const app = new Hono<{ Bindings: Env }>();
 
 app.use('*', logger());
@@ -29,8 +30,9 @@ app.use('*', logger());
 app.use('/api/*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], allowHeaders: ['Content-Type', 'Authorization'] }));
 
 userRoutes(app);
+uploadRoutes(app);
 
-app.get('/api/health', (c) => c.json({ success: true, data: { status: 'healthy', timestamp: new Date().toISOString() }}));
+app.get('/api/health', (c) => c.json({ success: true, data: { status: 'healthy', timestamp: new Date().toISOString() } }));
 
 app.post('/api/client-errors', async (c) => {
   try {

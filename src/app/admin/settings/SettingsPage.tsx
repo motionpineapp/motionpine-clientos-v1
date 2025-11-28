@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { User, Lock, Bell, Shield, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { FileUpload } from '@/components/FileUpload';
 
 export function SettingsPage() {
     const user = useAuthStore(s => s.user);
@@ -76,8 +77,17 @@ export function SettingsPage() {
                                         <AvatarFallback className="text-xl">{user?.name?.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <div className="space-y-2">
-                                        <Button variant="outline" size="sm">Change Avatar</Button>
-                                        <p className="text-xs text-muted-foreground">JPG, GIF or PNG. Max size of 800K</p>
+                                        <FileUpload
+                                            accept="image/*"
+                                            maxSize={2}
+                                            showPreview={false}
+                                            onUploadComplete={(url) => {
+                                                updateProfile({ avatar: url });
+                                                toast.success('Avatar updated successfully');
+                                            }}
+                                            className="w-full max-w-xs"
+                                        />
+                                        <p className="text-xs text-muted-foreground">JPG, GIF or PNG. Max size of 2MB</p>
                                     </div>
                                 </div>
                                 <Separator />
