@@ -16,11 +16,27 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
         }
     });
 
-    // GET /api/chats/client/:clientId - Get chat by client ID
+    // GET /api/chats/client/:clientId - Get chat by client ID (or User ID)
     app.get('/api/chats/client/:clientId', async (c) => {
         const { clientId } = c.req.param();
         try {
-            const chat = await db.getChatByClientId(c.env.DB, clientId);
+            let targetClientId = clientId;
+
+            // Try to find client directly
+            let client = await db.getClientById(c.env.DB, clientId);
+
+            // If not found, check if it's a User ID and resolve to Client
+            if (!client) {
+                const user = await db.getUserById(c.env.DB, clientId);
+                if (user) {
+                    client = await db.getClientByEmail(c.env.DB, user.email);
+                    if (client) {
+                        targetClientId = client.id;
+                    }
+                }
+            }
+
+            const chat = await db.getChatByClientId(c.env.DB, targetClientId);
             if (!chat) {
                 return c.json({ success: false, error: 'Chat not found' }, 404);
             }
@@ -39,21 +55,33 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
                 return c.json({ success: false, error: 'Client ID is required' }, 400);
             }
 
-            // Check if chat already exists
-            const existing = await db.getChatByClientId(c.env.DB, body.clientId);
-            if (existing) {
-                return c.json(existing);
+            let targetClientId = body.clientId;
+            let client = await db.getClientById(c.env.DB, body.clientId);
+
+            // If client not found by ID, try to resolve via User ID
+            if (!client) {
+                const user = await db.getUserById(c.env.DB, body.clientId);
+                if (user) {
+                    client = await db.getClientByEmail(c.env.DB, user.email);
+                    if (client) {
+                        targetClientId = client.id;
+                    }
+                }
             }
 
-            // Get client details for the title
-            const client = await db.getClientById(c.env.DB, body.clientId);
             if (!client) {
                 return c.json({ success: false, error: 'Client not found' }, 404);
             }
 
+            // Check if chat already exists for the resolved Client ID
+            const existing = await db.getChatByClientId(c.env.DB, targetClientId);
+            if (existing) {
+                return c.json(existing);
+            }
+
             const newChat: Chat = {
                 id: crypto.randomUUID(),
-                clientId: body.clientId,
+                clientId: targetClientId,
                 title: client.name || client.company || 'Support Chat',
                 lastMessage: null,
                 lastMessageTs: Date.now(),
