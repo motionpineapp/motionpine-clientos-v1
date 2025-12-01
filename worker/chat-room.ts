@@ -1,4 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
+import * as db from './db';
+import { ChatMessage } from '@shared/types';
 
 export interface ChatRoomEnv {
     DB: D1Database;
@@ -28,6 +30,12 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
         // Handle WebSocket upgrade
         const upgradeHeader = request.headers.get('Upgrade');
         if (!upgradeHeader || upgradeHeader.toLowerCase() !== 'websocket') {
+            // Check if this is an internal RPC call (e.g. broadcast from API)
+            // We can use a custom header or path to distinguish
+            const url = new URL(request.url);
+            if (url.pathname === '/broadcast') {
+                return this.handleBroadcast(request);
+            }
             return new Response('Expected WebSocket', { status: 426 });
         }
 
@@ -76,6 +84,17 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
         });
     }
 
+    // RPC method to handle broadcast from API
+    async handleBroadcast(request: Request): Promise<Response> {
+        try {
+            const message = await request.json();
+            this.broadcast(message);
+            return new Response('OK', { status: 200 });
+        } catch (error) {
+            return new Response('Error broadcasting', { status: 500 });
+        }
+    }
+
     async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
         try {
             // Find the session for this WebSocket
@@ -94,18 +113,34 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
 
             // Handle different message types
             switch (data.type) {
-                case 'message':
-                    // Broadcast the message to all connected clients
-                    this.broadcast({
-                        type: 'message',
+                case 'message': {
+                    // Create message object
+                    const chatMessage: ChatMessage = {
                         id: crypto.randomUUID(),
                         chatId: this.chatId,
                         userId: session.userId,
-                        userName: session.userName,
                         text: data.text,
-                        timestamp: Date.now()
+                        ts: Date.now(),
+                        senderName: session.userName,
+                        senderAvatar: undefined // We don't have avatar in session currently
+                    };
+
+                    // Persist to DB
+                    await db.createChatMessage(this.env.DB, chatMessage);
+
+                    // Update chat last message
+                    await db.updateChat(this.env.DB, this.chatId, {
+                        lastMessage: chatMessage.text,
+                        lastMessageTs: chatMessage.ts
+                    });
+
+                    // Broadcast the message to all connected clients
+                    this.broadcast({
+                        type: 'message',
+                        ...chatMessage
                     });
                     break;
+                }
 
                 case 'typing':
                     // Broadcast typing indicator (don't send to self)

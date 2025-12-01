@@ -94,7 +94,7 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
                 id: crypto.randomUUID(),
                 clientId: targetClientId,
                 title: client.name || client.company || 'Support Chat',
-                lastMessage: null,
+                lastMessage: undefined,
                 lastMessageTs: Date.now(),
                 unreadCount: 0
             };
@@ -133,7 +133,7 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
             const sender = await db.getUserByEmail(c.env.DB, body.userId); // ID is email in this system
             // Fallback if sender is not a user (e.g. system message), though unlikely in this flow
             const senderName = sender?.name || 'Unknown';
-            const senderAvatar = sender?.avatar || null;
+            const senderAvatar = sender?.avatar || undefined;
 
             const newMessage: ChatMessage = {
                 id: crypto.randomUUID(),
@@ -151,11 +151,23 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
             await db.updateChat(c.env.DB, chatId, {
                 lastMessage: body.text,
                 lastMessageTs: newMessage.ts,
-                // Simple unread logic: if sender is admin, increment for client? 
-                // For now, let's just update the timestamp and text. 
-                // Real unread count logic requires knowing who is reading.
-                // We'll skip complex unread logic for this MVP step.
             });
+
+            // Broadcast to WebSocket clients via ChatRoom DO
+            try {
+                const id = c.env.ChatRoom.idFromName(chatId);
+                const chatRoom = c.env.ChatRoom.get(id);
+                await chatRoom.fetch(new Request('http://internal/broadcast', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        type: 'message',
+                        ...created
+                    })
+                }));
+            } catch (broadcastError) {
+                console.warn('Failed to broadcast to WebSocket clients:', broadcastError);
+                // Don't fail the request if broadcast fails
+            }
 
             return c.json(created, 201);
         } catch (error) {
