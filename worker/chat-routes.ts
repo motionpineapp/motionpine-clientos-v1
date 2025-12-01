@@ -51,6 +51,8 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
     app.post('/api/chats', async (c) => {
         try {
             const body = await c.req.json<{ clientId: string }>();
+            console.log('[Chat] Creating chat for clientId:', body.clientId);
+
             if (!body.clientId) {
                 return c.json({ success: false, error: 'Client ID is required' }, 400);
             }
@@ -60,22 +62,31 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
 
             // If client not found by ID, try to resolve via User ID
             if (!client) {
+                console.log('[Chat] Client not found by ID, trying User ID resolution...');
                 const user = await db.getUserById(c.env.DB, body.clientId);
                 if (user) {
+                    console.log('[Chat] Found user:', user.email);
                     client = await db.getClientByEmail(c.env.DB, user.email);
                     if (client) {
+                        console.log('[Chat] Resolved to client:', client.id);
                         targetClientId = client.id;
+                    } else {
+                        console.warn('[Chat] User found but no associated client record.');
                     }
+                } else {
+                    console.warn('[Chat] User not found for ID:', body.clientId);
                 }
             }
 
             if (!client) {
-                return c.json({ success: false, error: 'Client not found' }, 404);
+                console.error('[Chat] Failed to resolve client for ID:', body.clientId);
+                return c.json({ success: false, error: 'Client not found. Ensure your user account is linked to a client record.' }, 404);
             }
 
             // Check if chat already exists for the resolved Client ID
             const existing = await db.getChatByClientId(c.env.DB, targetClientId);
             if (existing) {
+                console.log('[Chat] Returning existing chat:', existing.id);
                 return c.json(existing);
             }
 
@@ -89,6 +100,7 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
             };
 
             const created = await db.createChat(c.env.DB, newChat);
+            console.log('[Chat] Created new chat:', created.id);
             return c.json(created, 201);
         } catch (error) {
             console.error('Failed to create chat:', error);
