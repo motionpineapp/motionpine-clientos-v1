@@ -77,6 +77,34 @@ export function AdminDashboard() {
     }
   }, [selectedChatId]);
 
+  // Polling for messages and chats
+  useEffect(() => {
+    const intervalId = setInterval(async () => {
+      // 1. Refresh messages for selected chat
+      if (selectedChatId) {
+        try {
+          const msgs = await chatService.getMessages(selectedChatId);
+          // Only update if different to avoid re-renders? 
+          // For now, simple set is fine as React handles diffing
+          setMessages(msgs);
+        } catch (error) {
+          console.error('Failed to poll messages', error);
+        }
+      }
+
+      // 2. Refresh chat list (for unread counts / new chats)
+      try {
+        const chatsData = await chatService.getChats();
+        setChats(chatsData.items);
+      } catch (error) {
+        console.error('Failed to poll chats', error);
+      }
+
+    }, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(intervalId);
+  }, [selectedChatId]);
+
   const handleSendMessage = async () => {
     if (!messageText.trim() || !selectedChatId || !user) return;
 
@@ -261,8 +289,8 @@ export function AdminDashboard() {
                               </Avatar>
                             )}
                             <div className={`p-3 rounded-2xl text-sm max-w-[80%] ${msg.userId === user?.id
-                                ? 'bg-primary text-white rounded-tr-none'
-                                : 'bg-gray-100 rounded-tl-none'
+                              ? 'bg-primary text-white rounded-tr-none'
+                              : 'bg-gray-100 rounded-tl-none'
                               }`}>
                               {msg.text}
                             </div>

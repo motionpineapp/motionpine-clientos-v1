@@ -80,6 +80,22 @@ export function ClientDashboard() {
     loadData();
   }, [user?.id]);
 
+  // Polling for messages
+  useEffect(() => {
+    if (!chat) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const msgs = await chatService.getMessages(chat.id);
+        setMessages(msgs);
+      } catch (error) {
+        console.error('Failed to poll messages', error);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(intervalId);
+  }, [chat]);
+
   if (!user) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
@@ -206,8 +222,8 @@ export function ClientDashboard() {
                           </Avatar>
                         )}
                         <div className={`p-3 rounded-2xl text-sm max-w-[85%] ${msg.userId === user?.id
-                            ? 'bg-primary text-white rounded-tr-none'
-                            : 'bg-gray-100 rounded-tl-none'
+                          ? 'bg-primary text-white rounded-tr-none'
+                          : 'bg-gray-100 rounded-tl-none'
                           }`}>
                           {msg.text}
                         </div>
