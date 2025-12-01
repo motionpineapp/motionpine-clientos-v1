@@ -6,6 +6,7 @@ import { logger } from 'hono/logger';
 import { userRoutes } from './user-routes';
 import { uploadRoutes } from './upload-routes';
 import { settingsRoutes } from './settings-routes';
+import { chatRoutes } from './chat-routes';
 import { Env, GlobalDurableObject } from './core-utils';
 
 // Need to export GlobalDurableObject to make it available in wrangler
@@ -33,6 +34,7 @@ app.use('/api/*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PUT', 'DELE
 userRoutes(app);
 uploadRoutes(app);
 settingsRoutes(app);
+chatRoutes(app);
 
 app.get('/api/health', (c) => c.json({ success: true, data: { status: 'healthy', timestamp: new Date().toISOString() } }));
 

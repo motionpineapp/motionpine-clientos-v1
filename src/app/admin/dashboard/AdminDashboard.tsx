@@ -23,11 +23,20 @@ import { projectService } from '@/services/projects';
 import { chatService } from '@/services/chat';
 import { Client, Project, Chat } from '@shared/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthStore } from '@/services/auth';
+import { formatDistanceToNow } from 'date-fns';
+
 export function AdminDashboard() {
+  const user = useAuthStore(s => s.user);
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [messageText, setMessageText] = useState('');
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -39,6 +48,9 @@ export function AdminDashboard() {
         setClients(clientsData.items);
         setProjects(projectsData.items);
         setChats(chatsData.items);
+        if (chatsData.items.length > 0) {
+          setSelectedChatId(chatsData.items[0].id);
+        }
       } catch (error) {
         console.error('Failed to load dashboard data', error);
       } finally {
@@ -47,16 +59,57 @@ export function AdminDashboard() {
     };
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (selectedChatId) {
+      const loadMessages = async () => {
+        setIsLoadingMessages(true);
+        try {
+          const msgs = await chatService.getMessages(selectedChatId);
+          setMessages(msgs);
+        } catch (error) {
+          console.error('Failed to load messages', error);
+        } finally {
+          setIsLoadingMessages(false);
+        }
+      };
+      loadMessages();
+    }
+  }, [selectedChatId]);
+
+  const handleSendMessage = async () => {
+    if (!messageText.trim() || !selectedChatId || !user) return;
+
+    const text = messageText;
+    setMessageText(''); // Optimistic clear
+
+    try {
+      const sentMsg = await chatService.sendMessage(selectedChatId, text, user.id);
+      setMessages(prev => [...prev, sentMsg]);
+
+      // Update chat list last message
+      setChats(prev => prev.map(c =>
+        c.id === selectedChatId
+          ? { ...c, lastMessage: text, lastMessageTs: Date.now() }
+          : c
+      ));
+    } catch (error) {
+      console.error('Failed to send message', error);
+    }
+  };
+
   // Derived Stats
   const totalClients = clients?.length || 0;
   const activeProjectsCount = projects?.filter(p => p.status === 'in-progress').length || 0;
   const pendingIntakeCount = projects?.filter(p => p.status === 'todo').length || 0;
   const unreadCount = chats?.reduce((acc, c) => acc + (c.unreadCount || 0), 0) || 0;
   const totalRevenue = clients?.reduce((acc, c) => acc + c.totalRevenue, 0) || 0;
+
   // Lists
   const intakeRequests = projects?.filter(p => p.status === 'todo').slice(0, 2) || [];
   const recentClients = clients?.slice(0, 4) || [];
   const extraClients = Math.max(0, (clients?.length || 0) - 4);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <div className="space-y-8 animate-fade-in">
@@ -66,6 +119,7 @@ export function AdminDashboard() {
             <p className="text-muted-foreground mt-1">Overview of your agency performance.</p>
           </div>
         </div>
+
         <div className="bento-grid">
           {/* --- TOP ROW --- */}
           <BentoTile
@@ -103,6 +157,7 @@ export function AdminDashboard() {
               </div>
             )}
           </BentoTile>
+
           <BentoTile
             className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[200px] bg-white text-foreground border-gray-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             noPadding
@@ -122,6 +177,7 @@ export function AdminDashboard() {
               </div>
             </div>
           </BentoTile>
+
           <BentoTile
             className="col-span-1 md:col-span-2 lg:col-span-3 min-h-[200px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Intake Requests"
@@ -154,6 +210,7 @@ export function AdminDashboard() {
               )}
             </div>
           </BentoTile>
+
           {/* --- MIDDLE ROW --- */}
           <BentoTile
             className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 min-h-[500px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
@@ -163,10 +220,14 @@ export function AdminDashboard() {
           >
             <div className="flex h-full flex-col">
               <div className="flex-1 flex overflow-hidden">
-                <div className="w-20 border-r border-gray-100 flex flex-col items-center py-4 gap-4 bg-gray-50/50">
+                <div className="w-20 border-r border-gray-100 flex flex-col items-center py-4 gap-4 bg-gray-50/50 overflow-y-auto">
                   {chats.slice(0, 5).map((chat) => (
-                    <div key={chat.id} className="relative group cursor-pointer">
-                      <Avatar className="h-10 w-10 border-2 border-white shadow-sm hover:scale-105 transition-transform">
+                    <div
+                      key={chat.id}
+                      className={`relative group cursor-pointer ${selectedChatId === chat.id ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
+                      onClick={() => setSelectedChatId(chat.id)}
+                    >
+                      <Avatar className={`h-10 w-10 border-2 shadow-sm transition-transform ${selectedChatId === chat.id ? 'border-primary scale-105' : 'border-white hover:scale-105'}`}>
                         <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${chat.title}`} />
                         <AvatarFallback>{chat.title.charAt(0)}</AvatarFallback>
                       </Avatar>
@@ -176,7 +237,7 @@ export function AdminDashboard() {
                     </div>
                   ))}
                   <div className="mt-auto">
-                    <Button variant="ghost" size="icon" className="rounded-full">
+                    <Button variant="ghost" size="icon" className="rounded-full" onClick={() => window.location.href = '/admin/chat'}>
                       <MoreHorizontal className="size-5 text-muted-foreground" />
                     </Button>
                   </div>
@@ -184,26 +245,48 @@ export function AdminDashboard() {
                 <div className="flex-1 flex flex-col bg-white">
                   <ScrollArea className="flex-1 p-4">
                     <div className="space-y-4">
-                      <div className="flex gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alice" />
-                          <AvatarFallback>AF</AvatarFallback>
-                        </Avatar>
-                        <div className="bg-gray-100 p-3 rounded-2xl rounded-tl-none text-sm max-w-[80%]">
-                          Hey! Just checking on the status of the homepage design?
+                      {isLoadingMessages ? (
+                        <div className="flex justify-center p-4">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                         </div>
-                      </div>
-                      <div className="flex gap-3 flex-row-reverse">
-                        <div className="bg-primary text-white p-3 rounded-2xl rounded-tr-none text-sm max-w-[80%]">
-                          Hi! We're wrapping up the final touches. Sending a preview in 10 mins.
-                        </div>
-                      </div>
+                      ) : messages.length === 0 ? (
+                        <p className="text-center text-sm text-muted-foreground py-8">No messages yet.</p>
+                      ) : (
+                        messages.map((msg) => (
+                          <div key={msg.id} className={`flex gap-3 ${msg.userId === user?.id ? 'flex-row-reverse' : ''}`}>
+                            {msg.userId !== user?.id && (
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={msg.senderAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.senderName}`} />
+                                <AvatarFallback>{msg.senderName?.charAt(0) || '?'}</AvatarFallback>
+                              </Avatar>
+                            )}
+                            <div className={`p-3 rounded-2xl text-sm max-w-[80%] ${msg.userId === user?.id
+                                ? 'bg-primary text-white rounded-tr-none'
+                                : 'bg-gray-100 rounded-tl-none'
+                              }`}>
+                              {msg.text}
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </ScrollArea>
                   <div className="p-3 border-t border-gray-100 bg-gray-50/30">
                     <div className="relative">
-                      <Input placeholder="Type a message..." className="pr-10 bg-white border-gray-200" />
-                      <Button size="icon" variant="ghost" className="absolute right-1 top-1 h-8 w-8 text-primary hover:bg-primary/10">
+                      <Input
+                        placeholder="Type a message..."
+                        className="pr-10 bg-white border-gray-200"
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="absolute right-1 top-1 h-8 w-8 text-primary hover:bg-primary/10"
+                        onClick={handleSendMessage}
+                        disabled={!messageText.trim()}
+                      >
                         <Send className="size-4" />
                       </Button>
                     </div>
@@ -212,6 +295,7 @@ export function AdminDashboard() {
               </div>
             </div>
           </BentoTile>
+
           <BentoTile
             className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[240px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Clients"
@@ -236,6 +320,7 @@ export function AdminDashboard() {
               </Button>
             </div>
           </BentoTile>
+
           <BentoTile
             className="col-span-1 md:col-span-2 lg:col-span-6 min-h-[240px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Active Projects"
@@ -271,6 +356,7 @@ export function AdminDashboard() {
               </div>
             </div>
           </BentoTile>
+
           {/* --- LOWER ROW --- */}
           <BentoTile
             className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[160px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"

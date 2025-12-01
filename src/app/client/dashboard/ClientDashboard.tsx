@@ -21,15 +21,21 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuthStore } from '@/services/auth';
 import { projectService } from '@/services/projects';
 import { pineService } from '@/services/pines';
-import { Project } from '@shared/types';
+import { chatService } from '@/services/chat';
+import { Project, Chat, ChatMessage } from '@shared/types';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+
 export function ClientDashboard() {
   const user = useAuthStore(s => s.user);
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [pinesBalance, setPinesBalance] = useState(0);
+  const [chat, setChat] = useState<Chat | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [messageText, setMessageText] = useState('');
+
   useEffect(() => {
     const loadData = async () => {
       if (!user?.id) {
@@ -44,6 +50,26 @@ export function ClientDashboard() {
         ]);
         setProjects(projectsData);
         setPinesBalance(balanceData);
+
+        // Load Chat
+        try {
+          const userChat = await chatService.getChatByClientId(user.id);
+          setChat(userChat);
+          if (userChat) {
+            const msgs = await chatService.getMessages(userChat.id);
+            setMessages(msgs);
+          }
+        } catch (chatError) {
+          // If chat not found, try to create one
+          try {
+            const newChat = await chatService.createChatForClient(user.id);
+            setChat(newChat);
+            setMessages([]);
+          } catch (createError) {
+            console.error('Failed to init chat', createError);
+          }
+        }
+
       } catch (error) {
         console.error('Failed to load client dashboard', error);
         toast.error("Failed to load your dashboard data.");
@@ -53,6 +79,7 @@ export function ClientDashboard() {
     };
     loadData();
   }, [user?.id]);
+
   if (!user) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
@@ -63,7 +90,9 @@ export function ClientDashboard() {
       </div>
     );
   }
+
   const activeProject = projects.find(p => p.status === 'in-progress') || projects[0];
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
@@ -76,6 +105,23 @@ export function ClientDashboard() {
       </div>
     );
   }
+
+  const handleSendMessage = async () => {
+    if (!messageText.trim() || !chat || !user) return;
+
+    const text = messageText;
+    setMessageText(''); // Optimistic clear
+
+    try {
+      const sentMsg = await chatService.sendMessage(chat.id, text, user.id);
+      setMessages(prev => [...prev, sentMsg]);
+    } catch (err) {
+      console.error('Failed to send', err);
+      toast.error('Failed to send message');
+      // Could restore text here if needed
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <motion.div
@@ -123,6 +169,7 @@ export function ClientDashboard() {
             </BentoTile>
           </div>
         </div>
+
         <div className="bento-grid">
           <BentoTile
             className="col-span-1 md:col-span-4 lg:col-span-4 lg:row-span-4 min-h-[700px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
@@ -146,31 +193,52 @@ export function ClientDashboard() {
               </div>
               <ScrollArea className="flex-1 p-4 bg-white" style={{ scrollBehavior: 'smooth' }}>
                 <div className="space-y-4">
-                  <div className="flex gap-3 flex-row-reverse">
-                    <div className="bg-primary text-white p-3 rounded-2xl rounded-tr-none text-sm max-w-[85%]">
-                      Hi, I have a question about the latest invoice.
+                  {messages.length === 0 ? (
+                    <div className="text-center text-muted-foreground text-sm py-8">
+                      Start a conversation with our team.
                     </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>AD</AvatarFallback>
-                    </Avatar>
-                    <div className="bg-gray-100 p-3 rounded-2xl rounded-tl-none text-sm max-w-[85%]">
-                      Sure thing! What specifically would you like to know?
-                    </div>
-                  </div>
+                  ) : (
+                    messages.map((msg) => (
+                      <div key={msg.id} className={`flex gap-3 ${msg.userId === user?.id ? 'flex-row-reverse' : ''}`}>
+                        {msg.userId !== user?.id && (
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>AD</AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div className={`p-3 rounded-2xl text-sm max-w-[85%] ${msg.userId === user?.id
+                            ? 'bg-primary text-white rounded-tr-none'
+                            : 'bg-gray-100 rounded-tl-none'
+                          }`}>
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </ScrollArea>
               <div className="p-3 border-t border-gray-100 bg-gray-50/30">
                 <div className="relative">
-                  <Input placeholder="Message admin..." className="pr-10 bg-white border-gray-200" />
-                  <Button size="icon" variant="ghost" className="absolute right-1 top-1 h-8 w-8 text-primary hover:bg-primary/10">
+                  <Input
+                    placeholder="Message admin..."
+                    className="pr-10 bg-white border-gray-200"
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute right-1 top-1 h-8 w-8 text-primary hover:bg-primary/10"
+                    disabled={!messageText.trim()}
+                    onClick={handleSendMessage}
+                  >
                     <Send className="size-4" />
                   </Button>
                 </div>
               </div>
             </div>
           </BentoTile>
+
           <BentoTile
             className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[240px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Documents"
@@ -198,6 +266,7 @@ export function ClientDashboard() {
               <Button variant="ghost" size="sm" className="w-full text-muted-foreground">View All</Button>
             </div>
           </BentoTile>
+
           <BentoTile
             className="col-span-1 md:col-span-2 lg:col-span-6 min-h-[240px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title={activeProject ? `Active: ${activeProject.title}` : "No Active Projects"}
@@ -244,6 +313,7 @@ export function ClientDashboard() {
               </div>
             )}
           </BentoTile>
+
           {/* --- LOWER ROW --- */}
           <BentoTile
             className="col-span-1 md:col-span-2 lg:col-span-2 min-h-[160px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
