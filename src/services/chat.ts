@@ -50,8 +50,20 @@ class ChatService {
         this.currentUserId = userId;
         this.currentUserName = userName;
 
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
+        const apiUrl = import.meta.env.VITE_API_URL || '';
+        let protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        let host = window.location.host;
+
+        if (apiUrl) {
+            try {
+                const url = new URL(apiUrl);
+                protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+                host = url.host;
+            } catch (e) {
+                console.warn('[ChatService] Invalid VITE_API_URL, falling back to window.location');
+            }
+        }
+
         const wsUrl = `${protocol}//${host}/api/chats/${chatId}/websocket?userId=${encodeURIComponent(userId)}&userName=${encodeURIComponent(userName)}`;
 
         this.ws = new WebSocket(wsUrl);

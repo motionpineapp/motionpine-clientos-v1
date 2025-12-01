@@ -27,7 +27,7 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
     async fetch(request: Request): Promise<Response> {
         // Handle WebSocket upgrade
         const upgradeHeader = request.headers.get('Upgrade');
-        if (upgradeHeader !== 'websocket') {
+        if (!upgradeHeader || upgradeHeader.toLowerCase() !== 'websocket') {
             return new Response('Expected WebSocket', { status: 426 });
         }
 
