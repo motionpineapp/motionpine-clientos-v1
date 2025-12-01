@@ -80,21 +80,27 @@ export function ClientDashboard() {
     loadData();
   }, [user?.id]);
 
-  // Polling for messages
+  // WebSocket connection for real-time chat
   useEffect(() => {
-    if (!chat) return;
+    if (!chat || !user) return;
 
-    const intervalId = setInterval(async () => {
-      try {
-        const msgs = await chatService.getMessages(chat.id);
-        setMessages(msgs);
-      } catch (error) {
-        console.error('Failed to poll messages', error);
-      }
-    }, 5000); // Poll every 5 seconds
+    // Connect to WebSocket
+    chatService.connect(chat.id, user.id, user.name || 'Client');
 
-    return () => clearInterval(intervalId);
-  }, [chat]);
+    // Listen for incoming messages
+    const unsubscribe = chatService.onMessage((newMessage) => {
+      setMessages(prev => {
+        const exists = prev.some(msg => msg.id === newMessage.id);
+        if (exists) return prev;
+        return [...prev, newMessage];
+      });
+    });
+
+    return () => {
+      unsubscribe();
+      chatService.disconnect();
+    };
+  }, [chat, user]);
 
   if (!user) {
     return (
@@ -122,19 +128,18 @@ export function ClientDashboard() {
     );
   }
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!messageText.trim() || !chat || !user) return;
 
     const text = messageText;
     setMessageText(''); // Optimistic clear
 
     try {
-      const sentMsg = await chatService.sendMessage(chat.id, text, user.id);
-      setMessages(prev => [...prev, sentMsg]);
+      chatService.sendMessage(text);
     } catch (err) {
       console.error('Failed to send', err);
       toast.error('Failed to send message');
-      // Could restore text here if needed
+      setMessageText(text); // Restore on error
     }
   };
 

@@ -123,4 +123,29 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
             return c.json({ success: false, error: 'Failed to send message' }, 500);
         }
     });
+
+    // GET /api/chats/:chatId/websocket - Upgrade to WebSocket connection
+    app.get('/api/chats/:chatId/websocket', async (c) => {
+        const { chatId } = c.req.param();
+        const url = new URL(c.req.url);
+        const userId = url.searchParams.get('userId');
+        const userName = url.searchParams.get('userName');
+
+        if (!userId || !userName) {
+            return c.json({ success: false, error: 'Missing userId or userName' }, 400);
+        }
+
+        try {
+            // Get the ChatRoom Durable Object for this chat
+            const id = c.env.ChatRoom.idFromName(chatId);
+            const chatRoom = c.env.ChatRoom.get(id);
+
+            // Forward the request to the Durable Object
+            // It will handle the WebSocket upgrade
+            return chatRoom.fetch(c.req.raw);
+        } catch (error) {
+            console.error('Failed to establish WebSocket:', error);
+            return c.json({ success: false, error: 'Failed to establish WebSocket connection' }, 500);
+        }
+    });
 };

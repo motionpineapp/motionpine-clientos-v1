@@ -77,52 +77,53 @@ export function AdminDashboard() {
     }
   }, [selectedChatId]);
 
-  // Polling for messages and chats
+  // WebSocket connection for real-time chat
   useEffect(() => {
-    const intervalId = setInterval(async () => {
-      // 1. Refresh messages for selected chat
-      if (selectedChatId) {
-        try {
-          const msgs = await chatService.getMessages(selectedChatId);
-          // Only update if different to avoid re-renders? 
-          // For now, simple set is fine as React handles diffing
-          setMessages(msgs);
-        } catch (error) {
-          console.error('Failed to poll messages', error);
-        }
-      }
+    if (!selectedChatId || !user) return;
 
-      // 2. Refresh chat list (for unread counts / new chats)
-      try {
-        const chatsData = await chatService.getChats();
-        setChats(chatsData.items);
-      } catch (error) {
-        console.error('Failed to poll chats', error);
-      }
+    // Connect to WebSocket for the selected chat
+    chatService.connect(selectedChatId, user.id, user.name || 'Admin');
 
-    }, 5000); // Poll every 5 seconds
+    // Listen for incoming messages
+    const unsubscribe = chatService.onMessage((newMessage) => {
+      setMessages(prev => {
+        // Avoid duplicates by checking if message already exists
+        const exists = prev.some(msg => msg.id === newMessage.id);
+        if (exists) return prev;
+        return [...prev, newMessage];
+      });
 
-    return () => clearInterval(intervalId);
-  }, [selectedChatId]);
+      // Update the chat list with the latest message
+      setChats(prev => prev.map(c =>
+        c.id === selectedChatId
+          ? { ...c, lastMessage: newMessage.text, lastMessageTs: newMessage.ts }
+          : c
+      ));
+    });
 
-  const handleSendMessage = async () => {
+    // Cleanup on unmount or chat change
+    return () => {
+      unsubscribe();
+      chatService.disconnect();
+    };
+  }, [selectedChatId, user]);
+
+  const handleSendMessage = () => {
     if (!messageText.trim() || !selectedChatId || !user) return;
 
     const text = messageText;
     setMessageText(''); // Optimistic clear
 
     try {
-      const sentMsg = await chatService.sendMessage(selectedChatId, text, user.id);
-      setMessages(prev => [...prev, sentMsg]);
+      // Send via WebSocket instead of REST API
+      chatService.sendMessage(text);
 
-      // Update chat list last message
-      setChats(prev => prev.map(c =>
-        c.id === selectedChatId
-          ? { ...c, lastMessage: text, lastMessageTs: Date.now() }
-          : c
-      ));
+      // Message will be received via WebSocket listener
+      // No need to manually update messages array
     } catch (error) {
       console.error('Failed to send message', error);
+      // Restore text on error
+      setMessageText(text);
     }
   };
 
@@ -289,8 +290,8 @@ export function AdminDashboard() {
                               </Avatar>
                             )}
                             <div className={`p-3 rounded-2xl text-sm max-w-[80%] ${msg.userId === user?.id
-                              ? 'bg-primary text-white rounded-tr-none'
-                              : 'bg-gray-100 rounded-tl-none'
+                                ? 'bg-primary text-white rounded-tr-none'
+                                : 'bg-gray-100 rounded-tl-none'
                               }`}>
                               {msg.text}
                             </div>

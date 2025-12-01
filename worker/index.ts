@@ -8,23 +8,26 @@ import { uploadRoutes } from './upload-routes';
 import { settingsRoutes } from './settings-routes';
 import { chatRoutes } from './chat-routes';
 import { Env, GlobalDurableObject } from './core-utils';
+import { ChatRoom } from './chat-room';
 
-// Need to export GlobalDurableObject to make it available in wrangler
-export { GlobalDurableObject };
+// Need to export Durable Objects to make them available in wrangler
+export { GlobalDurableObject, ChatRoom };
+
 export interface ClientErrorReport {
-  message: string;
-  url: string;
-  userAgent: string;
-  timestamp: string;
-  stack?: string;
-  componentStack?: string;
-  errorBoundary?: boolean;
-  errorBoundaryProps?: Record<string, unknown>;
-  source?: string;
-  lineno?: number;
-  colno?: number;
-  error?: unknown;
+    message: string;
+    url: string;
+    userAgent: string;
+    timestamp: string;
+    stack?: string;
+    componentStack?: string;
+    errorBoundary?: boolean;
+    errorBoundaryProps?: Record<string, unknown>;
+    source?: string;
+    lineno?: number;
+    colno?: number;
+    error?: unknown;
 }
+
 const app = new Hono<{ Bindings: Env }>();
 
 app.use('*', logger());
@@ -39,15 +42,15 @@ chatRoutes(app);
 app.get('/api/health', (c) => c.json({ success: true, data: { status: 'healthy', timestamp: new Date().toISOString() } }));
 
 app.post('/api/client-errors', async (c) => {
-  try {
-    const e = await c.req.json<ClientErrorReport>();
-    if (!e.message) return c.json({ success: false, error: 'Missing required fields' }, 400);
-    console.error('[CLIENT ERROR]', JSON.stringify(e, null, 2));
-    return c.json({ success: true });
-  } catch (error) {
-    console.error('[CLIENT ERROR HANDLER] Failed:', error);
-    return c.json({ success: false, error: 'Failed to process' }, 500);
-  }
+    try {
+        const e = await c.req.json<ClientErrorReport>();
+        if (!e.message) return c.json({ success: false, error: 'Missing required fields' }, 400);
+        console.error('[CLIENT ERROR]', JSON.stringify(e, null, 2));
+        return c.json({ success: true });
+    } catch (error) {
+        console.error('[CLIENT ERROR HANDLER] Failed:', error);
+        return c.json({ success: false, error: 'Failed to process' }, 500);
+    }
 });
 
 app.notFound((c) => c.json({ success: false, error: 'Not Found' }, 404));
