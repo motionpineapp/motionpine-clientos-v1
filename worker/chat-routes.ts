@@ -67,11 +67,28 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
                 if (user) {
                     console.log('[Chat] Found user:', user.email);
                     client = await db.getClientByEmail(c.env.DB, user.email);
+
                     if (client) {
-                        console.log('[Chat] Resolved to client:', client.id);
+                        console.log('[Chat] Resolved to existing client:', client.id);
                         targetClientId = client.id;
                     } else {
-                        console.warn('[Chat] User found but no associated client record.');
+                        // Auto-create Client record for this user
+                        console.log('[Chat] Auto-creating Client record for user:', user.email);
+                        client = {
+                            id: crypto.randomUUID(),
+                            email: user.email,
+                            name: user.name,
+                            company: user.company || 'N/A',
+                            status: 'active',
+                            accountStatus: 'active',
+                            totalProjects: 0,
+                            totalRevenue: 0,
+                            joinedAt: new Date().toISOString(),
+                            avatar: user.avatar
+                        };
+                        await db.createClient(c.env.DB, client);
+                        targetClientId = client.id;
+                        console.log('[Chat] Created Client record:', client.id);
                     }
                 } else {
                     console.warn('[Chat] User not found for ID:', body.clientId);
@@ -80,7 +97,7 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
 
             if (!client) {
                 console.error('[Chat] Failed to resolve client for ID:', body.clientId);
-                return c.json({ success: false, error: 'Client not found. Ensure your user account is linked to a client record.' }, 404);
+                return c.json({ success: false, error: 'Client not found. Unable to create chat.' }, 404);
             }
 
             // Check if chat already exists for the resolved Client ID
