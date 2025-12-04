@@ -8,18 +8,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Loader2, Phone, Video, Info, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
+
 export function ClientChatPage() {
   const currentUser = useAuthStore(s => s.user);
   const [chat, setChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+
   const initChat = useCallback(async () => {
     if (!currentUser?.id) {
       toast.error('User session missing. Please log in again.');
       setIsLoading(false);
       return;
     }
+
     setIsLoading(true);
     try {
       const userChat = await chatService.getChatByClientId(currentUser.id);
@@ -46,11 +49,36 @@ export function ClientChatPage() {
       setIsLoading(false);
     }
   }, [currentUser]);
+
   useEffect(() => {
     initChat();
   }, [initChat]);
+
+  // Connect to WebSocket when chat is loaded
+  useEffect(() => {
+    if (chat && currentUser) {
+      console.log('Connecting to chat:', chat.id);
+      chatService.connect(chat.id, currentUser.id, currentUser.name);
+
+      // Listen for incoming messages
+      const unsubscribe = chatService.onMessage((msg) => {
+        setMessages(prev => {
+          // Avoid duplicates
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      });
+
+      return () => {
+        unsubscribe();
+        chatService.disconnect();
+      };
+    }
+  }, [chat, currentUser]);
+
   const handleSendMessage = async (text: string) => {
     if (!chat || !currentUser) return;
+
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg: ChatMessage = {
       id: tempId,
@@ -61,8 +89,10 @@ export function ClientChatPage() {
       senderName: currentUser.name,
       senderAvatar: currentUser.avatar
     };
+
     setMessages(prev => [...prev, optimisticMsg]);
     setIsSending(true);
+
     try {
       const sentMsg = await chatService.sendMessage(chat.id, text, currentUser.id);
       setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));
@@ -73,6 +103,7 @@ export function ClientChatPage() {
       setIsSending(false);
     }
   };
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
@@ -85,6 +116,7 @@ export function ClientChatPage() {
       </div>
     );
   }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <div className="h-[calc(100vh-180px)] flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-fade-in">
@@ -109,6 +141,7 @@ export function ClientChatPage() {
             <Button variant="ghost" size="icon" className="text-gray-500 hover:text-primary"><MoreVertical className="h-4 w-4" /></Button>
           </div>
         </div>
+
         <ChatMessages
           messages={messages}
           currentUserId={currentUser?.id || ''}
