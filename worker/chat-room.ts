@@ -134,11 +134,11 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
                         lastMessageTs: chatMessage.ts
                     });
 
-                    // Broadcast the message to all connected clients
+                    // Broadcast the message to all connected clients (except sender - they use optimistic update)
                     this.broadcast({
                         type: 'message',
                         ...chatMessage
-                    });
+                    }, session);
                     break;
                 }
 

@@ -60,8 +60,11 @@ export function ClientChatPage() {
       console.log('Connecting to chat:', chat.id);
       chatService.connect(chat.id, currentUser.id, currentUser.name);
 
-      // Listen for incoming messages
+      // Listen for incoming messages from other users
       const unsubscribe = chatService.onMessage((msg) => {
+        // Skip own messages - we already added them via optimistic update
+        if (msg.userId === currentUser?.id) return;
+
         setMessages(prev => {
           // Avoid duplicates
           if (prev.some(m => m.id === msg.id)) return prev;

@@ -86,6 +86,9 @@ export function ChatPage() {
       chatService.connect(selectedChatId, currentUser.id, currentUser.name);
 
       const unsubscribe = chatService.onMessage((msg) => {
+        // Skip own messages - we already added them via optimistic update
+        if (msg.userId === currentUser?.id) return;
+
         setMessages(prev => {
           if (prev.some(m => m.id === msg.id)) return prev;
           return [...prev, msg];
