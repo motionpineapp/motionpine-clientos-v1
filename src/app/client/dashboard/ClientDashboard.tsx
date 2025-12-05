@@ -193,12 +193,12 @@ export function ClientDashboard() {
 
         <div className="bento-grid">
           <BentoTile
-            className="col-span-1 md:col-span-4 lg:col-span-4 lg:row-span-4 min-h-[700px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+            className="col-span-1 md:col-span-4 lg:col-span-4 lg:row-span-2 h-[500px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden"
             title="Quick Chat"
             icon={<MessageSquare className="size-5" />}
             noPadding
           >
-            <div className="flex h-full flex-col">
+            <div className="flex h-full flex-col overflow-hidden">
               <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
                 <Avatar className="h-10 w-10 border border-white shadow-sm">
                   <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" />
