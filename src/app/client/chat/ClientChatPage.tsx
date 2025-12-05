@@ -18,6 +18,15 @@ export function ClientChatPage() {
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
+  const loadMessages = useCallback(async (chatId: string) => {
+    try {
+      const msgs = await chatService.getMessages(chatId);
+      setMessages(msgs);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    }
+  }, []);
+
   const initChat = useCallback(async () => {
     if (!currentUser?.id) {
       toast.error('User session missing. Please log in again.');
@@ -30,8 +39,7 @@ export function ClientChatPage() {
       const userChat = await chatService.getChatByClientId(currentUser.id);
       setChat(userChat);
       if (userChat) {
-        const msgs = await chatService.getMessages(userChat.id);
-        setMessages(msgs);
+        await loadMessages(userChat.id);
       }
     } catch (error) {
       if (error instanceof Error && error.message.includes('not found')) {
@@ -50,7 +58,7 @@ export function ClientChatPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, loadMessages]);
 
   useEffect(() => {
     initChat();
@@ -61,6 +69,12 @@ export function ClientChatPage() {
     if (chat && currentUser) {
       console.log('Connecting to chat:', chat.id);
       chatService.connect(chat.id, currentUser.id, currentUser.name);
+
+      // When WebSocket connects, reload messages to catch any missed during connection
+      const unsubscribeConnect = chatService.onConnect(() => {
+        console.log('[Chat] WebSocket connected, syncing messages...');
+        loadMessages(chat.id);
+      });
 
       // Listen for incoming messages from other users
       const unsubscribeMessage = chatService.onMessage((msg) => {
@@ -92,13 +106,14 @@ export function ClientChatPage() {
       });
 
       return () => {
+        unsubscribeConnect();
         unsubscribeMessage();
         unsubscribeTyping();
         clearTimeout(typingTimeoutRef.current);
         chatService.disconnect();
       };
     }
-  }, [chat, currentUser]);
+  }, [chat, currentUser, loadMessages]);
 
   const handleSendMessage = async (text: string) => {
     if (!chat || !currentUser) return;

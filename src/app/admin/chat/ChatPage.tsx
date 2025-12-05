@@ -87,6 +87,12 @@ export function ChatPage() {
       console.log('Connecting to chat:', selectedChatId);
       chatService.connect(selectedChatId, currentUser.id, currentUser.name);
 
+      // When WebSocket connects, reload messages to catch any missed during connection
+      const unsubscribeConnect = chatService.onConnect(() => {
+        console.log('[Chat] WebSocket connected, syncing messages...');
+        loadMessages(selectedChatId);
+      });
+
       // Listen for incoming messages
       const unsubscribeMessage = chatService.onMessage((msg) => {
         // Skip own messages - we already added them via optimistic update
@@ -131,6 +137,7 @@ export function ChatPage() {
       });
 
       return () => {
+        unsubscribeConnect();
         unsubscribeMessage();
         unsubscribeTyping();
         clearTimeout(typingTimeoutRef.current);
