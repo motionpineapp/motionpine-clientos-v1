@@ -159,7 +159,8 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
                 text: body.text,
                 ts: Date.now(),
                 senderName,
-                senderAvatar
+                senderAvatar,
+                nonce: crypto.randomUUID() // Unique nonce for deduplication
             };
 
             const created = await db.createChatMessage(c.env.DB, newMessage);

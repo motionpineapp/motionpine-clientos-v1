@@ -3,12 +3,14 @@ import { api } from '@/lib/api-client';
 
 type MessageHandler = (message: ChatMessage) => void;
 type ConnectionHandler = () => void;
+type TypingHandler = (data: { userId: string; userName: string; isTyping: boolean }) => void;
 
 class ChatService {
     private ws: WebSocket | null = null;
     private messageHandlers: Set<MessageHandler> = new Set();
     private connectionHandlers: Set<ConnectionHandler> = new Set();
     private disconnectionHandlers: Set<ConnectionHandler> = new Set();
+    private typingHandlers: Set<TypingHandler> = new Set();
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
     private reconnectDelay = 2000;
@@ -90,8 +92,8 @@ class ChatService {
                         break;
 
                     case 'typing':
-                        // Could be used for typing indicators in the future
-                        console.log('[ChatService] User typing:', data);
+                        // Broadcast to typing handlers
+                        this.typingHandlers.forEach(handler => handler(data));
                         break;
 
                     case 'user_joined':
@@ -163,6 +165,11 @@ class ChatService {
         return () => this.messageHandlers.delete(handler);
     }
 
+    onTyping(handler: TypingHandler): () => void {
+        this.typingHandlers.add(handler);
+        return () => this.typingHandlers.delete(handler);
+    }
+
     onConnect(handler: ConnectionHandler): () => void {
         this.connectionHandlers.add(handler);
         return () => this.connectionHandlers.delete(handler);
@@ -175,6 +182,10 @@ class ChatService {
 
     isConnected(): boolean {
         return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+    }
+
+    getCurrentUserId(): string | null {
+        return this.currentUserId;
     }
 }
 
