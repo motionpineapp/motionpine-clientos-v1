@@ -90,7 +90,10 @@ export function ChatPage() {
         if (msg.userId === currentUser?.id) return;
 
         setMessages(prev => {
+          // Check by ID (handles permanent IDs)
           if (prev.some(m => m.id === msg.id)) return prev;
+          // Also check by text+timestamp (handles race with temp IDs)
+          if (prev.some(m => m.text === msg.text && Math.abs(m.ts - msg.ts) < 2000)) return prev;
           return [...prev, msg];
         });
 

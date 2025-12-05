@@ -178,7 +178,8 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
                     method: 'POST',
                     body: JSON.stringify({
                         type: 'message',
-                        ...created
+                        ...created,
+                        excludeUserId: body.userId  // Exclude sender from broadcast
                     })
                 }));
             } catch (broadcastError) {

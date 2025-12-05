@@ -87,8 +87,16 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
     // RPC method to handle broadcast from API
     async handleBroadcast(request: Request): Promise<Response> {
         try {
-            const message = await request.json();
-            this.broadcast(message);
+            const body = await request.json<{ excludeUserId?: string;[key: string]: any }>();
+            const { excludeUserId, ...message } = body;
+
+            // Find session to exclude (if sender specified)
+            let excludeSession: Session | undefined;
+            if (excludeUserId) {
+                excludeSession = Array.from(this.sessions).find(s => s.userId === excludeUserId);
+            }
+
+            this.broadcast(message, excludeSession);
             return new Response('OK', { status: 200 });
         } catch (error) {
             return new Response('Error broadcasting', { status: 500 });
