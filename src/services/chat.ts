@@ -17,6 +17,7 @@ class ChatService {
     private currentChatId: string | null = null;
     private currentUserId: string | null = null;
     private currentUserName: string | null = null;
+    private isConnected = false;
 
     // REST API Methods (for fetching history)
     async getChats(): Promise<{ items: Chat[] }> {
@@ -42,6 +43,9 @@ class ChatService {
     connect(chatId: string, userId: string, userName: string): void {
         // Don't reconnect if already connected to the same chat
         if (this.ws && this.ws.readyState === WebSocket.OPEN && this.currentChatId === chatId) {
+            // Already connected - fire connection handlers immediately
+            console.log('[ChatService] Already connected, firing handlers');
+            this.connectionHandlers.forEach(handler => handler());
             return;
         }
 
@@ -68,10 +72,12 @@ class ChatService {
 
         const wsUrl = `${protocol}//${host}/api/chats/${chatId}/websocket?userId=${encodeURIComponent(userId)}&userName=${encodeURIComponent(userName)}`;
 
+        console.log('[ChatService] Connecting to:', wsUrl);
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
             console.log('[ChatService] WebSocket connected');
+            this.isConnected = true;
             this.reconnectAttempts = 0;
             this.connectionHandlers.forEach(handler => handler());
         };
@@ -115,6 +121,7 @@ class ChatService {
 
         this.ws.onclose = () => {
             console.log('[ChatService] WebSocket closed');
+            this.isConnected = false;
             this.disconnectionHandlers.forEach(handler => handler());
 
             // Attempt to reconnect if not explicitly disconnected
@@ -131,6 +138,7 @@ class ChatService {
     }
 
     disconnect(): void {
+        this.isConnected = false;
         if (this.ws) {
             this.ws.close();
             this.ws = null;
@@ -159,7 +167,7 @@ class ChatService {
         }));
     }
 
-    // Event Listeners
+    // Event Listeners - return unsubscribe function
     onMessage(handler: MessageHandler): () => void {
         this.messageHandlers.add(handler);
         return () => this.messageHandlers.delete(handler);
@@ -172,6 +180,10 @@ class ChatService {
 
     onConnect(handler: ConnectionHandler): () => void {
         this.connectionHandlers.add(handler);
+        // If already connected, fire immediately
+        if (this.isConnected) {
+            handler();
+        }
         return () => this.connectionHandlers.delete(handler);
     }
 
@@ -180,8 +192,8 @@ class ChatService {
         return () => this.disconnectionHandlers.delete(handler);
     }
 
-    isConnected(): boolean {
-        return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+    getIsConnected(): boolean {
+        return this.isConnected;
     }
 
     getCurrentUserId(): string | null {
