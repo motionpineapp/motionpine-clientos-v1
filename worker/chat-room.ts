@@ -20,6 +20,10 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
     private sessions: Set<Session> = new Set();
     private chatId: string;
 
+    // Track recently broadcast messages to prevent duplicates
+    private recentMessageIds: Set<string> = new Set();
+    private readonly MESSAGE_TTL = 30000; // 30 seconds
+
     constructor(ctx: DurableObjectState, env: ChatRoomEnv) {
         super(ctx, env);
         // Extract chatId from the Durable Object ID name
@@ -87,8 +91,31 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
     // RPC method to handle broadcast from API
     async handleBroadcast(request: Request): Promise<Response> {
         try {
-            const message = await request.json();
-            this.broadcast(message);
+            const body = await request.json<{ excludeUserId?: string; id?: string;[key: string]: any }>();
+            const { excludeUserId, ...message } = body;
+
+            // Check if we've already broadcast this message (race condition prevention)
+            if (message.id && this.recentMessageIds.has(message.id)) {
+                console.log('[ChatRoom] Skipping duplicate broadcast for message:', message.id);
+                return new Response('Already broadcast', { status: 200 });
+            }
+
+            // Track this message ID
+            if (message.id) {
+                this.recentMessageIds.add(message.id);
+                // Clean up after TTL
+                setTimeout(() => {
+                    this.recentMessageIds.delete(message.id);
+                }, this.MESSAGE_TTL);
+            }
+
+            // Find session to exclude (if sender specified)
+            let excludeSession: Session | undefined;
+            if (excludeUserId) {
+                excludeSession = Array.from(this.sessions).find(s => s.userId === excludeUserId);
+            }
+
+            this.broadcast(message, excludeSession);
             return new Response('OK', { status: 200 });
         } catch (error) {
             return new Response('Error broadcasting', { status: 500 });
@@ -114,16 +141,24 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
             // Handle different message types
             switch (data.type) {
                 case 'message': {
-                    // Create message object
+                    // Create message object with nonce for deduplication
+                    const messageId = crypto.randomUUID();
                     const chatMessage: ChatMessage = {
-                        id: crypto.randomUUID(),
+                        id: messageId,
                         chatId: this.chatId,
                         userId: session.userId,
                         text: data.text,
                         ts: Date.now(),
                         senderName: session.userName,
-                        senderAvatar: undefined // We don't have avatar in session currently
+                        senderAvatar: undefined,
+                        nonce: data.nonce // Pass through client nonce if provided
                     };
+
+                    // Track to prevent duplicate broadcasts
+                    this.recentMessageIds.add(messageId);
+                    setTimeout(() => {
+                        this.recentMessageIds.delete(messageId);
+                    }, this.MESSAGE_TTL);
 
                     // Persist to DB
                     await db.createChatMessage(this.env.DB, chatMessage);
@@ -134,11 +169,11 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
                         lastMessageTs: chatMessage.ts
                     });
 
-                    // Broadcast the message to all connected clients
+                    // Broadcast the message to all connected clients (except sender - they use optimistic update)
                     this.broadcast({
                         type: 'message',
                         ...chatMessage
-                    });
+                    }, session);
                     break;
                 }
 

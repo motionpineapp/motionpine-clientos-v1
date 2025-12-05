@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { chatService } from '@/services/chat';
 import { useAuthStore } from '@/services/auth';
@@ -15,7 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
 export function ChatPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const initialClientId = searchParams.get('clientId');
   const currentUser = useAuthStore(s => s.user);
   const [chats, setChats] = useState<Chat[]>([]);
@@ -24,6 +24,8 @@ export function ChatPage() {
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [typingUser, setTypingUser] = useState<string | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
   const loadChats = useCallback(async () => {
     try {
@@ -79,15 +81,26 @@ export function ChatPage() {
 
   useEffect(() => {
     if (selectedChatId && currentUser) {
+      // Load initial messages
       loadMessages(selectedChatId);
 
-      // Connect to WebSocket
-      console.log('Connecting to chat:', selectedChatId);
-      chatService.connect(selectedChatId, currentUser.id, currentUser.name);
+      // ① Register handlers FIRST (before connect)
+      const unsubscribeConnect = chatService.onConnect(() => {
+        console.log('[Chat] WebSocket connected, syncing messages...');
+        loadMessages(selectedChatId);
+      });
 
-      const unsubscribe = chatService.onMessage((msg) => {
+      const unsubscribeMessage = chatService.onMessage((msg) => {
+        // Skip own messages - we already added them via optimistic update
+        if (msg.userId === currentUser.id) return;
+
         setMessages(prev => {
+          // Check by ID
           if (prev.some(m => m.id === msg.id)) return prev;
+          // Check by nonce (bulletproof deduplication)
+          if (msg.nonce && prev.some(m => m.nonce === msg.nonce)) return prev;
+          // Fallback: text+timestamp check
+          if (prev.some(m => m.text === msg.text && Math.abs(m.ts - msg.ts) < 2000)) return prev;
           return [...prev, msg];
         });
 
@@ -105,8 +118,27 @@ export function ChatPage() {
         }));
       });
 
+      const unsubscribeTyping = chatService.onTyping(({ userName, isTyping }) => {
+        if (isTyping) {
+          setTypingUser(userName);
+          clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => {
+            setTypingUser(null);
+          }, 3000);
+        } else {
+          setTypingUser(null);
+        }
+      });
+
+      // ② THEN connect (handlers are ready now)
+      console.log('[Chat] Connecting to chat:', selectedChatId);
+      chatService.connect(selectedChatId, currentUser.id, currentUser.name);
+
       return () => {
-        unsubscribe();
+        unsubscribeConnect();
+        unsubscribeMessage();
+        unsubscribeTyping();
+        clearTimeout(typingTimeoutRef.current);
         chatService.disconnect();
       };
     }
@@ -116,6 +148,7 @@ export function ChatPage() {
     if (!selectedChatId || !currentUser) return;
 
     const tempId = `temp-${Date.now()}`;
+    const nonce = crypto.randomUUID();
     const optimisticMsg: ChatMessage = {
       id: tempId,
       chatId: selectedChatId,
@@ -123,7 +156,8 @@ export function ChatPage() {
       text,
       ts: Date.now(),
       senderName: currentUser.name,
-      senderAvatar: currentUser.avatar
+      senderAvatar: currentUser.avatar,
+      nonce
     };
 
     setMessages(prev => [...prev, optimisticMsg]);
@@ -238,8 +272,14 @@ export function ChatPage() {
                   <div>
                     <h2 className="font-semibold text-gray-900">{selectedChat.title}</h2>
                     <div className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-green-500" />
-                      <span className="text-xs text-muted-foreground">Online</span>
+                      {typingUser ? (
+                        <span className="text-xs text-primary animate-pulse">{typingUser} is typing...</span>
+                      ) : (
+                        <>
+                          <span className="h-2 w-2 rounded-full bg-green-500" />
+                          <span className="text-xs text-muted-foreground">Online</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
