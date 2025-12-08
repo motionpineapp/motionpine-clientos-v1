@@ -146,9 +146,9 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
                 return bad(c, 'Text and User ID are required');
             }
 
-            // Get sender details
-            const sender = await db.getUserByEmail(c.env.DB, body.userId); // ID is email in this system
-            // Fallback if sender is not a user (e.g. system message), though unlikely in this flow
+            // Get sender details - userId is a UUID, not email
+            const sender = await db.getUserById(c.env.DB, body.userId);
+            // Fallback if sender not found
             const senderName = sender?.name || 'Unknown';
             const senderAvatar = sender?.avatar || undefined;
 
