@@ -3,18 +3,21 @@ import { api } from '@/lib/api-client';
 
 type MessageHandler = (message: ChatMessage) => void;
 type ConnectionHandler = () => void;
+type TypingHandler = (data: { userId: string; userName: string; isTyping: boolean }) => void;
 
 class ChatService {
     private ws: WebSocket | null = null;
     private messageHandlers: Set<MessageHandler> = new Set();
     private connectionHandlers: Set<ConnectionHandler> = new Set();
     private disconnectionHandlers: Set<ConnectionHandler> = new Set();
+    private typingHandlers: Set<TypingHandler> = new Set();
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
     private reconnectDelay = 2000;
     private currentChatId: string | null = null;
     private currentUserId: string | null = null;
     private currentUserName: string | null = null;
+    private isConnected = false;
 
     // REST API Methods (for fetching history)
     async getChats(): Promise<{ items: Chat[] }> {
@@ -40,6 +43,9 @@ class ChatService {
     connect(chatId: string, userId: string, userName: string): void {
         // Don't reconnect if already connected to the same chat
         if (this.ws && this.ws.readyState === WebSocket.OPEN && this.currentChatId === chatId) {
+            // Already connected - fire connection handlers immediately
+            console.log('[ChatService] Already connected, firing handlers');
+            this.connectionHandlers.forEach(handler => handler());
             return;
         }
 
@@ -66,10 +72,12 @@ class ChatService {
 
         const wsUrl = `${protocol}//${host}/api/chats/${chatId}/websocket?userId=${encodeURIComponent(userId)}&userName=${encodeURIComponent(userName)}`;
 
+        console.log('[ChatService] Connecting to:', wsUrl);
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
             console.log('[ChatService] WebSocket connected');
+            this.isConnected = true;
             this.reconnectAttempts = 0;
             this.connectionHandlers.forEach(handler => handler());
         };
@@ -90,8 +98,8 @@ class ChatService {
                         break;
 
                     case 'typing':
-                        // Could be used for typing indicators in the future
-                        console.log('[ChatService] User typing:', data);
+                        // Broadcast to typing handlers
+                        this.typingHandlers.forEach(handler => handler(data));
                         break;
 
                     case 'user_joined':
@@ -113,6 +121,7 @@ class ChatService {
 
         this.ws.onclose = () => {
             console.log('[ChatService] WebSocket closed');
+            this.isConnected = false;
             this.disconnectionHandlers.forEach(handler => handler());
 
             // Attempt to reconnect if not explicitly disconnected
@@ -129,6 +138,7 @@ class ChatService {
     }
 
     disconnect(): void {
+        this.isConnected = false;
         if (this.ws) {
             this.ws.close();
             this.ws = null;
@@ -139,16 +149,11 @@ class ChatService {
         this.reconnectAttempts = 0;
     }
 
-    sendMessage(text: string): void {
-        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            console.error('[ChatService] WebSocket not connected');
-            throw new Error('WebSocket not connected');
-        }
-
-        this.ws.send(JSON.stringify({
-            type: 'message',
-            text
-        }));
+    async sendMessage(chatId: string, text: string, userId: string): Promise<ChatMessage> {
+        return api<ChatMessage>(`/api/chats/${chatId}/messages`, {
+            method: 'POST',
+            body: JSON.stringify({ text, userId }),
+        });
     }
 
     sendTypingIndicator(isTyping: boolean): void {
@@ -162,14 +167,23 @@ class ChatService {
         }));
     }
 
-    // Event Listeners
+    // Event Listeners - return unsubscribe function
     onMessage(handler: MessageHandler): () => void {
         this.messageHandlers.add(handler);
         return () => this.messageHandlers.delete(handler);
     }
 
+    onTyping(handler: TypingHandler): () => void {
+        this.typingHandlers.add(handler);
+        return () => this.typingHandlers.delete(handler);
+    }
+
     onConnect(handler: ConnectionHandler): () => void {
         this.connectionHandlers.add(handler);
+        // If already connected, fire immediately
+        if (this.isConnected) {
+            handler();
+        }
         return () => this.connectionHandlers.delete(handler);
     }
 
@@ -178,8 +192,12 @@ class ChatService {
         return () => this.disconnectionHandlers.delete(handler);
     }
 
-    isConnected(): boolean {
-        return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+    getIsConnected(): boolean {
+        return this.isConnected;
+    }
+
+    getCurrentUserId(): string | null {
+        return this.currentUserId;
     }
 }
 

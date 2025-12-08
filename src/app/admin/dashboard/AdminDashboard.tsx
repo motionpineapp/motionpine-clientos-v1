@@ -1,3 +1,4 @@
+// Deployment trigger: 2024-12-08T14:02 - Quick Chat Debug
 import React, { useEffect, useState } from 'react';
 import { BentoTile } from '@/components/tiles/BentoTile';
 import {
@@ -81,49 +82,102 @@ export function AdminDashboard() {
   useEffect(() => {
     if (!selectedChatId || !user) return;
 
-    // Connect to WebSocket for the selected chat
-    chatService.connect(selectedChatId, user.id, user.name || 'Admin');
+    // ① Register handlers FIRST (before connect)
+    const unsubscribeConnect = chatService.onConnect(() => {
+      console.log('[AdminDashboard] WebSocket connected, syncing messages...');
+      // Reload messages to ensure we have latest
+      chatService.getMessages(selectedChatId).then(setMessages).catch(console.error);
+    });
 
-    // Listen for incoming messages
-    const unsubscribe = chatService.onMessage((newMessage) => {
+    const unsubscribeMessage = chatService.onMessage((newMessage) => {
+      // Skip own messages - we already added them via optimistic update
+      if (newMessage.userId === user.id) return;
+
       setMessages(prev => {
-        // Avoid duplicates by checking if message already exists
-        const exists = prev.some(msg => msg.id === newMessage.id);
-        if (exists) return prev;
+        // Check by ID
+        if (prev.some(msg => msg.id === newMessage.id)) return prev;
+        // Check by nonce (bulletproof deduplication)
+        if (newMessage.nonce && prev.some(msg => msg.nonce === newMessage.nonce)) return prev;
+        // Fallback: text+timestamp check
+        if (prev.some(msg => msg.text === newMessage.text && Math.abs(msg.ts - newMessage.ts) < 2000)) return prev;
         return [...prev, newMessage];
       });
 
       // Update the chat list with the latest message
       setChats(prev => prev.map(c =>
         c.id === selectedChatId
-          ? { ...c, lastMessage: newMessage.text, lastMessageTs: newMessage.ts }
+          ? { ...c, lastMessage: newMessage.text, lastMessageTs: newMessage.ts, unreadCount: (c.unreadCount || 0) + 1 }
           : c
       ));
     });
 
+    // ② THEN connect (handlers are ready now)
+    console.log('[AdminDashboard] Connecting to chat:', selectedChatId);
+    chatService.connect(selectedChatId, user.id, user.name || 'Admin');
+
     // Cleanup on unmount or chat change
     return () => {
-      unsubscribe();
+      unsubscribeConnect();
+      unsubscribeMessage();
       chatService.disconnect();
     };
   }, [selectedChatId, user]);
 
-  const handleSendMessage = () => {
-    if (!messageText.trim() || !selectedChatId || !user) return;
+  const handleSendMessage = async () => {
+    // DEBUG: Log all values to diagnose the issue
+    console.log('[QuickChat DEBUG] handleSendMessage called');
+    console.log('[QuickChat DEBUG] messageText:', messageText);
+    console.log('[QuickChat DEBUG] selectedChatId:', selectedChatId);
+    console.log('[QuickChat DEBUG] user:', user);
+    console.log('[QuickChat DEBUG] user?.id:', user?.id);
+    console.log('[QuickChat DEBUG] user?.email:', user?.email);
+
+    if (!messageText.trim() || !selectedChatId || !user) {
+      console.log('[QuickChat DEBUG] Guard failed - returning early');
+      return;
+    }
 
     const text = messageText;
-    setMessageText(''); // Optimistic clear
+    const tempId = `temp-${Date.now()}`;
+    const nonce = crypto.randomUUID();
+
+    // Optimistic update - add message immediately
+    const optimisticMsg = {
+      id: tempId,
+      chatId: selectedChatId,
+      userId: user.id,
+      text,
+      ts: Date.now(),
+      senderName: user.name,
+      senderAvatar: user.avatar,
+      nonce
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+    setMessageText(''); // Clear input
+
+    console.log('[QuickChat DEBUG] About to call sendMessage with:');
+    console.log('[QuickChat DEBUG]   chatId:', selectedChatId);
+    console.log('[QuickChat DEBUG]   text:', text);
+    console.log('[QuickChat DEBUG]   userId:', user.id);
 
     try {
-      // Send via WebSocket instead of REST API
-      chatService.sendMessage(text);
+      // Send via REST API (proper 3-argument call)
+      const sentMsg = await chatService.sendMessage(selectedChatId, text, user.id);
+      // Replace temp message with real one
+      setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));
 
-      // Message will be received via WebSocket listener
-      // No need to manually update messages array
+      // Update chat list
+      setChats(prev => prev.map(c =>
+        c.id === selectedChatId
+          ? { ...c, lastMessage: text, lastMessageTs: Date.now() }
+          : c
+      ));
     } catch (error) {
       console.error('Failed to send message', error);
-      // Restore text on error
-      setMessageText(text);
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      setMessageText(text); // Restore text
     }
   };
 
@@ -242,13 +296,13 @@ export function AdminDashboard() {
 
           {/* --- MIDDLE ROW --- */}
           <BentoTile
-            className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 min-h-[500px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+            className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 h-[500px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden"
             title="Quick Chat"
             icon={<MessageSquare className="size-5" />}
             noPadding
           >
-            <div className="flex h-full flex-col">
-              <div className="flex-1 flex overflow-hidden">
+            <div className="flex h-full flex-col overflow-hidden min-h-0">
+              <div className="flex-1 flex overflow-hidden min-h-0">
                 <div className="w-20 border-r border-gray-100 flex flex-col items-center py-4 gap-4 bg-gray-50/50 overflow-y-auto">
                   {chats.slice(0, 5).map((chat) => (
                     <div
@@ -271,8 +325,8 @@ export function AdminDashboard() {
                     </Button>
                   </div>
                 </div>
-                <div className="flex-1 flex flex-col bg-white">
-                  <ScrollArea className="flex-1 p-4">
+                <div className="flex-1 flex flex-col bg-white min-h-0">
+                  <ScrollArea className="flex-1 min-h-0 p-4">
                     <div className="space-y-4">
                       {isLoadingMessages ? (
                         <div className="flex justify-center p-4">
@@ -290,8 +344,8 @@ export function AdminDashboard() {
                               </Avatar>
                             )}
                             <div className={`p-3 rounded-2xl text-sm max-w-[80%] ${msg.userId === user?.id
-                                ? 'bg-primary text-white rounded-tr-none'
-                                : 'bg-gray-100 rounded-tl-none'
+                              ? 'bg-primary text-white rounded-tr-none'
+                              : 'bg-gray-100 rounded-tl-none'
                               }`}>
                               {msg.text}
                             </div>
@@ -300,7 +354,7 @@ export function AdminDashboard() {
                       )}
                     </div>
                   </ScrollArea>
-                  <div className="p-3 border-t border-gray-100 bg-gray-50/30">
+                  <div className="flex-shrink-0 p-3 border-t border-gray-100 bg-gray-50/30">
                     <div className="relative">
                       <Input
                         placeholder="Type a message..."
