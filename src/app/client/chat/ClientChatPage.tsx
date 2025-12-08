@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { chatService } from '@/services/chat';
 import { useAuthStore } from '@/services/auth';
 import { Chat, ChatMessage } from '@shared/types';
@@ -8,38 +8,25 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Loader2, Phone, Video, Info, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
-
 export function ClientChatPage() {
   const currentUser = useAuthStore(s => s.user);
   const [chat, setChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const [typingUser, setTypingUser] = useState<string | null>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
-
-  const loadMessages = useCallback(async (chatId: string) => {
-    try {
-      const msgs = await chatService.getMessages(chatId);
-      setMessages(msgs);
-    } catch (error) {
-      console.error('Failed to load messages:', error);
-    }
-  }, []);
-
   const initChat = useCallback(async () => {
     if (!currentUser?.id) {
       toast.error('User session missing. Please log in again.');
       setIsLoading(false);
       return;
     }
-
     setIsLoading(true);
     try {
       const userChat = await chatService.getChatByClientId(currentUser.id);
       setChat(userChat);
       if (userChat) {
-        await loadMessages(userChat.id);
+        const msgs = await chatService.getMessages(userChat.id);
+        setMessages(msgs);
       }
     } catch (error) {
       if (error instanceof Error && error.message.includes('not found')) {
@@ -58,67 +45,13 @@ export function ClientChatPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, loadMessages]);
-
+  }, [currentUser]);
   useEffect(() => {
     initChat();
   }, [initChat]);
-
-  // Connect to WebSocket when chat is loaded
-  useEffect(() => {
-    if (chat && currentUser) {
-      // ① Register handlers FIRST (before connect)
-      const unsubscribeConnect = chatService.onConnect(() => {
-        console.log('[Chat] WebSocket connected, syncing messages...');
-        loadMessages(chat.id);
-      });
-
-      const unsubscribeMessage = chatService.onMessage((msg) => {
-        // Skip own messages - we already added them via optimistic update
-        if (msg.userId === currentUser.id) return;
-
-        setMessages(prev => {
-          // Check by ID
-          if (prev.some(m => m.id === msg.id)) return prev;
-          // Check by nonce (bulletproof deduplication)
-          if (msg.nonce && prev.some(m => m.nonce === msg.nonce)) return prev;
-          // Fallback: text+timestamp check
-          if (prev.some(m => m.text === msg.text && Math.abs(m.ts - msg.ts) < 2000)) return prev;
-          return [...prev, msg];
-        });
-      });
-
-      const unsubscribeTyping = chatService.onTyping(({ userName, isTyping }) => {
-        if (isTyping) {
-          setTypingUser(userName);
-          clearTimeout(typingTimeoutRef.current);
-          typingTimeoutRef.current = setTimeout(() => {
-            setTypingUser(null);
-          }, 3000);
-        } else {
-          setTypingUser(null);
-        }
-      });
-
-      // ② THEN connect (handlers are ready now)
-      console.log('[Chat] Connecting to chat:', chat.id);
-      chatService.connect(chat.id, currentUser.id, currentUser.name);
-
-      return () => {
-        unsubscribeConnect();
-        unsubscribeMessage();
-        unsubscribeTyping();
-        clearTimeout(typingTimeoutRef.current);
-        chatService.disconnect();
-      };
-    }
-  }, [chat, currentUser, loadMessages]);
-
   const handleSendMessage = async (text: string) => {
     if (!chat || !currentUser) return;
-
     const tempId = `temp-${Date.now()}`;
-    const nonce = crypto.randomUUID();
     const optimisticMsg: ChatMessage = {
       id: tempId,
       chatId: chat.id,
@@ -126,13 +59,10 @@ export function ClientChatPage() {
       text,
       ts: Date.now(),
       senderName: currentUser.name,
-      senderAvatar: currentUser.avatar,
-      nonce
+      senderAvatar: currentUser.avatar
     };
-
     setMessages(prev => [...prev, optimisticMsg]);
     setIsSending(true);
-
     try {
       const sentMsg = await chatService.sendMessage(chat.id, text, currentUser.id);
       setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));
@@ -143,7 +73,6 @@ export function ClientChatPage() {
       setIsSending(false);
     }
   };
-
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
@@ -156,7 +85,6 @@ export function ClientChatPage() {
       </div>
     );
   }
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <div className="h-[calc(100vh-180px)] flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-fade-in">
@@ -169,14 +97,8 @@ export function ClientChatPage() {
             <div>
               <h2 className="font-semibold text-gray-900">Admin Support</h2>
               <div className="flex items-center gap-1.5">
-                {typingUser ? (
-                  <span className="text-xs text-primary animate-pulse">{typingUser} is typing...</span>
-                ) : (
-                  <>
-                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-xs text-muted-foreground">Online</span>
-                  </>
-                )}
+                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-xs text-muted-foreground">Online</span>
               </div>
             </div>
           </div>
@@ -187,7 +109,6 @@ export function ClientChatPage() {
             <Button variant="ghost" size="icon" className="text-gray-500 hover:text-primary"><MoreVertical className="h-4 w-4" /></Button>
           </div>
         </div>
-
         <ChatMessages
           messages={messages}
           currentUserId={currentUser?.id || ''}
