@@ -15,7 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
 export function ChatPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialClientId = searchParams.get('clientId');
   const currentUser = useAuthStore(s => s.user);
   const [chats, setChats] = useState<Chat[]>([]);
@@ -81,18 +81,22 @@ export function ChatPage() {
 
   useEffect(() => {
     if (selectedChatId && currentUser) {
-      // Load initial messages
       loadMessages(selectedChatId);
 
-      // ① Register handlers FIRST (before connect)
+      // Connect to WebSocket
+      console.log('Connecting to chat:', selectedChatId);
+      chatService.connect(selectedChatId, currentUser.id, currentUser.name);
+
+      // When WebSocket connects, reload messages to catch any missed during connection
       const unsubscribeConnect = chatService.onConnect(() => {
         console.log('[Chat] WebSocket connected, syncing messages...');
         loadMessages(selectedChatId);
       });
 
+      // Listen for incoming messages
       const unsubscribeMessage = chatService.onMessage((msg) => {
         // Skip own messages - we already added them via optimistic update
-        if (msg.userId === currentUser.id) return;
+        if (msg.userId === currentUser?.id) return;
 
         setMessages(prev => {
           // Check by ID
@@ -118,9 +122,11 @@ export function ChatPage() {
         }));
       });
 
+      // Listen for typing indicators
       const unsubscribeTyping = chatService.onTyping(({ userName, isTyping }) => {
         if (isTyping) {
           setTypingUser(userName);
+          // Clear typing after 3 seconds if no update
           clearTimeout(typingTimeoutRef.current);
           typingTimeoutRef.current = setTimeout(() => {
             setTypingUser(null);
@@ -129,10 +135,6 @@ export function ChatPage() {
           setTypingUser(null);
         }
       });
-
-      // ② THEN connect (handlers are ready now)
-      console.log('[Chat] Connecting to chat:', selectedChatId);
-      chatService.connect(selectedChatId, currentUser.id, currentUser.name);
 
       return () => {
         unsubscribeConnect();

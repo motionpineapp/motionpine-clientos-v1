@@ -67,15 +67,19 @@ export function ClientChatPage() {
   // Connect to WebSocket when chat is loaded
   useEffect(() => {
     if (chat && currentUser) {
-      // ① Register handlers FIRST (before connect)
+      console.log('Connecting to chat:', chat.id);
+      chatService.connect(chat.id, currentUser.id, currentUser.name);
+
+      // When WebSocket connects, reload messages to catch any missed during connection
       const unsubscribeConnect = chatService.onConnect(() => {
         console.log('[Chat] WebSocket connected, syncing messages...');
         loadMessages(chat.id);
       });
 
+      // Listen for incoming messages from other users
       const unsubscribeMessage = chatService.onMessage((msg) => {
         // Skip own messages - we already added them via optimistic update
-        if (msg.userId === currentUser.id) return;
+        if (msg.userId === currentUser?.id) return;
 
         setMessages(prev => {
           // Check by ID
@@ -88,6 +92,7 @@ export function ClientChatPage() {
         });
       });
 
+      // Listen for typing indicators
       const unsubscribeTyping = chatService.onTyping(({ userName, isTyping }) => {
         if (isTyping) {
           setTypingUser(userName);
@@ -99,10 +104,6 @@ export function ClientChatPage() {
           setTypingUser(null);
         }
       });
-
-      // ② THEN connect (handlers are ready now)
-      console.log('[Chat] Connecting to chat:', chat.id);
-      chatService.connect(chat.id, currentUser.id, currentUser.name);
 
       return () => {
         unsubscribeConnect();
