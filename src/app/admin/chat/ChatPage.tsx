@@ -13,6 +13,7 @@ import { Search, MoreVertical, Phone, Video, Info, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+
 export function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialClientId = searchParams.get('clientId');
@@ -23,6 +24,7 @@ export function ChatPage() {
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
   const loadChats = useCallback(async () => {
     try {
       setIsLoadingChats(true);
@@ -34,9 +36,11 @@ export function ChatPage() {
       setIsLoadingChats(false);
     }
   }, []);
+
   useEffect(() => {
     loadChats();
   }, [loadChats]);
+
   const createChatIfNeeded = useCallback(async (clientId: string) => {
     try {
       const newChat = await chatService.createChatForClient(clientId);
@@ -47,6 +51,7 @@ export function ChatPage() {
       toast.error('Failed to initialize chat');
     }
   }, []);
+
   useEffect(() => {
     if (initialClientId && chats.length > 0) {
       const chat = chats.find(c => c.clientId === initialClientId);
@@ -59,6 +64,7 @@ export function ChatPage() {
       setSelectedChatId(chats[0].id);
     }
   }, [initialClientId, chats, selectedChatId, createChatIfNeeded]);
+
   const loadMessages = useCallback(async (chatId: string) => {
     try {
       setIsLoadingMessages(true);
@@ -70,13 +76,45 @@ export function ChatPage() {
       setIsLoadingMessages(false);
     }
   }, []);
+
   useEffect(() => {
-    if (selectedChatId) {
+    if (selectedChatId && currentUser) {
       loadMessages(selectedChatId);
+
+      // Connect to WebSocket
+      console.log('Connecting to chat:', selectedChatId);
+      chatService.connect(selectedChatId, currentUser.id, currentUser.name);
+
+      const unsubscribe = chatService.onMessage((msg) => {
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+
+        // Update last message in chat list
+        setChats(prev => prev.map(c => {
+          if (c.id === msg.chatId) {
+            return {
+              ...c,
+              lastMessage: msg.text,
+              lastMessageTs: msg.ts,
+              unreadCount: (c.unreadCount || 0) + 1
+            };
+          }
+          return c;
+        }));
+      });
+
+      return () => {
+        unsubscribe();
+        chatService.disconnect();
+      };
     }
-  }, [selectedChatId, loadMessages]);
+  }, [selectedChatId, currentUser, loadMessages]);
+
   const handleSendMessage = async (text: string) => {
     if (!selectedChatId || !currentUser) return;
+
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg: ChatMessage = {
       id: tempId,
@@ -87,10 +125,13 @@ export function ChatPage() {
       senderName: currentUser.name,
       senderAvatar: currentUser.avatar
     };
+
     setMessages(prev => [...prev, optimisticMsg]);
+
     try {
       const sentMsg = await chatService.sendMessage(selectedChatId, text, currentUser.id);
       setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));
+
       setChats(prev => prev.map(c => {
         if (c.id === selectedChatId) {
           return { ...c, lastMessage: text, lastMessageTs: Date.now() };
@@ -102,10 +143,13 @@ export function ChatPage() {
       toast.error('Failed to send message');
     }
   };
+
   const filteredChats = chats.filter(chat =>
     chat.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
   const selectedChat = chats.find(c => c.id === selectedChatId);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <div className="h-[calc(100vh-180px)] flex bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-fade-in">
@@ -127,6 +171,7 @@ export function ChatPage() {
               />
             </div>
           </div>
+
           <div className="flex-1 overflow-y-auto">
             {isLoadingChats ? (
               <div className="flex flex-col items-center justify-center h-32 gap-2 text-muted-foreground">
@@ -180,6 +225,7 @@ export function ChatPage() {
             )}
           </div>
         </div>
+
         <div className="flex-1 flex flex-col min-w-0 bg-white">
           {selectedChat ? (
             <>
@@ -204,6 +250,7 @@ export function ChatPage() {
                   <Button variant="ghost" size="icon" className="text-gray-500 hover:text-primary"><MoreVertical className="h-4 w-4" /></Button>
                 </div>
               </div>
+
               <ChatMessages
                 messages={messages}
                 currentUserId={currentUser?.id || ''}
