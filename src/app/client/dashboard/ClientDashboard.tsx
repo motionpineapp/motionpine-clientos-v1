@@ -144,7 +144,19 @@ export function ClientDashboard() {
   }
 
   const handleSendMessage = async () => {
-    if (!messageText.trim() || !chat || !user) return;
+    // DEBUG: Log all values to diagnose the issue
+    console.log('[ClientQuickChat DEBUG] handleSendMessage called');
+    console.log('[ClientQuickChat DEBUG] messageText:', messageText);
+    console.log('[ClientQuickChat DEBUG] chat:', chat);
+    console.log('[ClientQuickChat DEBUG] chat?.id:', chat?.id);
+    console.log('[ClientQuickChat DEBUG] user:', user);
+    console.log('[ClientQuickChat DEBUG] user?.id:', user?.id);
+    console.log('[ClientQuickChat DEBUG] user?.email:', user?.email);
+
+    if (!messageText.trim() || !chat || !user) {
+      console.log('[ClientQuickChat DEBUG] Guard failed - returning early');
+      return;
+    }
 
     const text = messageText;
     const tempId = `temp-${Date.now()}`;
@@ -164,6 +176,11 @@ export function ClientDashboard() {
 
     setMessages(prev => [...prev, optimisticMsg]);
     setMessageText(''); // Clear input
+
+    console.log('[ClientQuickChat DEBUG] About to call sendMessage with:');
+    console.log('[ClientQuickChat DEBUG]   chatId:', chat.id);
+    console.log('[ClientQuickChat DEBUG]   text:', text);
+    console.log('[ClientQuickChat DEBUG]   userId:', user.id);
 
     try {
       // Send via REST API (proper 3-argument call)
