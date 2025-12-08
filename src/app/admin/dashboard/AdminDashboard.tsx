@@ -81,85 +81,49 @@ export function AdminDashboard() {
   useEffect(() => {
     if (!selectedChatId || !user) return;
 
-    // ① Register handlers FIRST (before connect)
-    const unsubscribeConnect = chatService.onConnect(() => {
-      console.log('[AdminDashboard] WebSocket connected, syncing messages...');
-      // Reload messages to ensure we have latest
-      chatService.getMessages(selectedChatId).then(setMessages).catch(console.error);
-    });
+    // Connect to WebSocket for the selected chat
+    chatService.connect(selectedChatId, user.id, user.name || 'Admin');
 
-    const unsubscribeMessage = chatService.onMessage((newMessage) => {
-      // Skip own messages - we already added them via optimistic update
-      if (newMessage.userId === user.id) return;
-
+    // Listen for incoming messages
+    const unsubscribe = chatService.onMessage((newMessage) => {
       setMessages(prev => {
-        // Check by ID
-        if (prev.some(msg => msg.id === newMessage.id)) return prev;
-        // Check by nonce (bulletproof deduplication)
-        if (newMessage.nonce && prev.some(msg => msg.nonce === newMessage.nonce)) return prev;
-        // Fallback: text+timestamp check
-        if (prev.some(msg => msg.text === newMessage.text && Math.abs(msg.ts - newMessage.ts) < 2000)) return prev;
+        // Avoid duplicates by checking if message already exists
+        const exists = prev.some(msg => msg.id === newMessage.id);
+        if (exists) return prev;
         return [...prev, newMessage];
       });
 
       // Update the chat list with the latest message
       setChats(prev => prev.map(c =>
         c.id === selectedChatId
-          ? { ...c, lastMessage: newMessage.text, lastMessageTs: newMessage.ts, unreadCount: (c.unreadCount || 0) + 1 }
+          ? { ...c, lastMessage: newMessage.text, lastMessageTs: newMessage.ts }
           : c
       ));
     });
 
-    // ② THEN connect (handlers are ready now)
-    console.log('[AdminDashboard] Connecting to chat:', selectedChatId);
-    chatService.connect(selectedChatId, user.id, user.name || 'Admin');
-
     // Cleanup on unmount or chat change
     return () => {
-      unsubscribeConnect();
-      unsubscribeMessage();
+      unsubscribe();
       chatService.disconnect();
     };
   }, [selectedChatId, user]);
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!messageText.trim() || !selectedChatId || !user) return;
 
     const text = messageText;
-    const tempId = `temp-${Date.now()}`;
-    const nonce = crypto.randomUUID();
-
-    // Optimistic update - add message immediately
-    const optimisticMsg = {
-      id: tempId,
-      chatId: selectedChatId,
-      userId: user.id,
-      text,
-      ts: Date.now(),
-      senderName: user.name,
-      senderAvatar: user.avatar,
-      nonce
-    };
-
-    setMessages(prev => [...prev, optimisticMsg]);
-    setMessageText('');
+    setMessageText(''); // Optimistic clear
 
     try {
-      const sentMsg = await chatService.sendMessage(selectedChatId, text, user.id);
-      // Replace temp message with real one
-      setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));
+      // Send via WebSocket instead of REST API
+      chatService.sendMessage(text);
 
-      // Update chat list
-      setChats(prev => prev.map(c =>
-        c.id === selectedChatId
-          ? { ...c, lastMessage: text, lastMessageTs: Date.now() }
-          : c
-      ));
+      // Message will be received via WebSocket listener
+      // No need to manually update messages array
     } catch (error) {
       console.error('Failed to send message', error);
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(m => m.id !== tempId));
-      setMessageText(text); // Restore text
+      // Restore text on error
+      setMessageText(text);
     }
   };
 
@@ -278,13 +242,13 @@ export function AdminDashboard() {
 
           {/* --- MIDDLE ROW --- */}
           <BentoTile
-            className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 h-[500px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden"
+            className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 min-h-[500px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Quick Chat"
             icon={<MessageSquare className="size-5" />}
             noPadding
           >
-            <div className="flex h-full flex-col overflow-hidden min-h-0">
-              <div className="flex-1 flex overflow-hidden min-h-0">
+            <div className="flex h-full flex-col">
+              <div className="flex-1 flex overflow-hidden">
                 <div className="w-20 border-r border-gray-100 flex flex-col items-center py-4 gap-4 bg-gray-50/50 overflow-y-auto">
                   {chats.slice(0, 5).map((chat) => (
                     <div
@@ -307,8 +271,8 @@ export function AdminDashboard() {
                     </Button>
                   </div>
                 </div>
-                <div className="flex-1 flex flex-col bg-white min-h-0">
-                  <ScrollArea className="flex-1 min-h-0 p-4">
+                <div className="flex-1 flex flex-col bg-white">
+                  <ScrollArea className="flex-1 p-4">
                     <div className="space-y-4">
                       {isLoadingMessages ? (
                         <div className="flex justify-center p-4">
@@ -326,8 +290,8 @@ export function AdminDashboard() {
                               </Avatar>
                             )}
                             <div className={`p-3 rounded-2xl text-sm max-w-[80%] ${msg.userId === user?.id
-                              ? 'bg-primary text-white rounded-tr-none'
-                              : 'bg-gray-100 rounded-tl-none'
+                                ? 'bg-primary text-white rounded-tr-none'
+                                : 'bg-gray-100 rounded-tl-none'
                               }`}>
                               {msg.text}
                             </div>
@@ -336,7 +300,7 @@ export function AdminDashboard() {
                       )}
                     </div>
                   </ScrollArea>
-                  <div className="flex-shrink-0 p-3 border-t border-gray-100 bg-gray-50/30">
+                  <div className="p-3 border-t border-gray-100 bg-gray-50/30">
                     <div className="relative">
                       <Input
                         placeholder="Type a message..."

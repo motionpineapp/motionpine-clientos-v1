@@ -3,14 +3,12 @@ import { api } from '@/lib/api-client';
 
 type MessageHandler = (message: ChatMessage) => void;
 type ConnectionHandler = () => void;
-type TypingHandler = (data: { userId: string; userName: string; isTyping: boolean }) => void;
 
 class ChatService {
     private ws: WebSocket | null = null;
     private messageHandlers: Set<MessageHandler> = new Set();
     private connectionHandlers: Set<ConnectionHandler> = new Set();
     private disconnectionHandlers: Set<ConnectionHandler> = new Set();
-    private typingHandlers: Set<TypingHandler> = new Set();
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
     private reconnectDelay = 2000;
@@ -92,8 +90,8 @@ class ChatService {
                         break;
 
                     case 'typing':
-                        // Broadcast to typing handlers
-                        this.typingHandlers.forEach(handler => handler(data));
+                        // Could be used for typing indicators in the future
+                        console.log('[ChatService] User typing:', data);
                         break;
 
                     case 'user_joined':
@@ -141,11 +139,16 @@ class ChatService {
         this.reconnectAttempts = 0;
     }
 
-    async sendMessage(chatId: string, text: string, userId: string): Promise<ChatMessage> {
-        return api<ChatMessage>(`/api/chats/${chatId}/messages`, {
-            method: 'POST',
-            body: JSON.stringify({ text, userId }),
-        });
+    sendMessage(text: string): void {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            console.error('[ChatService] WebSocket not connected');
+            throw new Error('WebSocket not connected');
+        }
+
+        this.ws.send(JSON.stringify({
+            type: 'message',
+            text
+        }));
     }
 
     sendTypingIndicator(isTyping: boolean): void {
@@ -165,11 +168,6 @@ class ChatService {
         return () => this.messageHandlers.delete(handler);
     }
 
-    onTyping(handler: TypingHandler): () => void {
-        this.typingHandlers.add(handler);
-        return () => this.typingHandlers.delete(handler);
-    }
-
     onConnect(handler: ConnectionHandler): () => void {
         this.connectionHandlers.add(handler);
         return () => this.connectionHandlers.delete(handler);
@@ -182,10 +180,6 @@ class ChatService {
 
     isConnected(): boolean {
         return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
-    }
-
-    getCurrentUserId(): string | null {
-        return this.currentUserId;
     }
 }
 

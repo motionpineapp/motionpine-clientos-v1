@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { chatService } from '@/services/chat';
 import { useAuthStore } from '@/services/auth';
@@ -13,7 +13,6 @@ import { Search, MoreVertical, Phone, Video, Info, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
-
 export function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialClientId = searchParams.get('clientId');
@@ -24,9 +23,6 @@ export function ChatPage() {
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [typingUser, setTypingUser] = useState<string | null>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
-
   const loadChats = useCallback(async () => {
     try {
       setIsLoadingChats(true);
@@ -38,11 +34,9 @@ export function ChatPage() {
       setIsLoadingChats(false);
     }
   }, []);
-
   useEffect(() => {
     loadChats();
   }, [loadChats]);
-
   const createChatIfNeeded = useCallback(async (clientId: string) => {
     try {
       const newChat = await chatService.createChatForClient(clientId);
@@ -53,7 +47,6 @@ export function ChatPage() {
       toast.error('Failed to initialize chat');
     }
   }, []);
-
   useEffect(() => {
     if (initialClientId && chats.length > 0) {
       const chat = chats.find(c => c.clientId === initialClientId);
@@ -66,7 +59,6 @@ export function ChatPage() {
       setSelectedChatId(chats[0].id);
     }
   }, [initialClientId, chats, selectedChatId, createChatIfNeeded]);
-
   const loadMessages = useCallback(async (chatId: string) => {
     try {
       setIsLoadingMessages(true);
@@ -78,79 +70,14 @@ export function ChatPage() {
       setIsLoadingMessages(false);
     }
   }, []);
-
   useEffect(() => {
-    if (selectedChatId && currentUser) {
+    if (selectedChatId) {
       loadMessages(selectedChatId);
-
-      // Connect to WebSocket
-      console.log('Connecting to chat:', selectedChatId);
-      chatService.connect(selectedChatId, currentUser.id, currentUser.name);
-
-      // When WebSocket connects, reload messages to catch any missed during connection
-      const unsubscribeConnect = chatService.onConnect(() => {
-        console.log('[Chat] WebSocket connected, syncing messages...');
-        loadMessages(selectedChatId);
-      });
-
-      // Listen for incoming messages
-      const unsubscribeMessage = chatService.onMessage((msg) => {
-        // Skip own messages - we already added them via optimistic update
-        if (msg.userId === currentUser?.id) return;
-
-        setMessages(prev => {
-          // Check by ID
-          if (prev.some(m => m.id === msg.id)) return prev;
-          // Check by nonce (bulletproof deduplication)
-          if (msg.nonce && prev.some(m => m.nonce === msg.nonce)) return prev;
-          // Fallback: text+timestamp check
-          if (prev.some(m => m.text === msg.text && Math.abs(m.ts - msg.ts) < 2000)) return prev;
-          return [...prev, msg];
-        });
-
-        // Update last message in chat list
-        setChats(prev => prev.map(c => {
-          if (c.id === msg.chatId) {
-            return {
-              ...c,
-              lastMessage: msg.text,
-              lastMessageTs: msg.ts,
-              unreadCount: (c.unreadCount || 0) + 1
-            };
-          }
-          return c;
-        }));
-      });
-
-      // Listen for typing indicators
-      const unsubscribeTyping = chatService.onTyping(({ userName, isTyping }) => {
-        if (isTyping) {
-          setTypingUser(userName);
-          // Clear typing after 3 seconds if no update
-          clearTimeout(typingTimeoutRef.current);
-          typingTimeoutRef.current = setTimeout(() => {
-            setTypingUser(null);
-          }, 3000);
-        } else {
-          setTypingUser(null);
-        }
-      });
-
-      return () => {
-        unsubscribeConnect();
-        unsubscribeMessage();
-        unsubscribeTyping();
-        clearTimeout(typingTimeoutRef.current);
-        chatService.disconnect();
-      };
     }
-  }, [selectedChatId, currentUser, loadMessages]);
-
+  }, [selectedChatId, loadMessages]);
   const handleSendMessage = async (text: string) => {
     if (!selectedChatId || !currentUser) return;
-
     const tempId = `temp-${Date.now()}`;
-    const nonce = crypto.randomUUID();
     const optimisticMsg: ChatMessage = {
       id: tempId,
       chatId: selectedChatId,
@@ -158,16 +85,12 @@ export function ChatPage() {
       text,
       ts: Date.now(),
       senderName: currentUser.name,
-      senderAvatar: currentUser.avatar,
-      nonce
+      senderAvatar: currentUser.avatar
     };
-
     setMessages(prev => [...prev, optimisticMsg]);
-
     try {
       const sentMsg = await chatService.sendMessage(selectedChatId, text, currentUser.id);
       setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));
-
       setChats(prev => prev.map(c => {
         if (c.id === selectedChatId) {
           return { ...c, lastMessage: text, lastMessageTs: Date.now() };
@@ -179,13 +102,10 @@ export function ChatPage() {
       toast.error('Failed to send message');
     }
   };
-
   const filteredChats = chats.filter(chat =>
     chat.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
   const selectedChat = chats.find(c => c.id === selectedChatId);
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
       <div className="h-[calc(100vh-180px)] flex bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-fade-in">
@@ -207,7 +127,6 @@ export function ChatPage() {
               />
             </div>
           </div>
-
           <div className="flex-1 overflow-y-auto">
             {isLoadingChats ? (
               <div className="flex flex-col items-center justify-center h-32 gap-2 text-muted-foreground">
@@ -261,7 +180,6 @@ export function ChatPage() {
             )}
           </div>
         </div>
-
         <div className="flex-1 flex flex-col min-w-0 bg-white">
           {selectedChat ? (
             <>
@@ -274,14 +192,8 @@ export function ChatPage() {
                   <div>
                     <h2 className="font-semibold text-gray-900">{selectedChat.title}</h2>
                     <div className="flex items-center gap-1.5">
-                      {typingUser ? (
-                        <span className="text-xs text-primary animate-pulse">{typingUser} is typing...</span>
-                      ) : (
-                        <>
-                          <span className="h-2 w-2 rounded-full bg-green-500" />
-                          <span className="text-xs text-muted-foreground">Online</span>
-                        </>
-                      )}
+                      <span className="h-2 w-2 rounded-full bg-green-500" />
+                      <span className="text-xs text-muted-foreground">Online</span>
                     </div>
                   </div>
                 </div>
@@ -292,7 +204,6 @@ export function ChatPage() {
                   <Button variant="ghost" size="icon" className="text-gray-500 hover:text-primary"><MoreVertical className="h-4 w-4" /></Button>
                 </div>
               </div>
-
               <ChatMessages
                 messages={messages}
                 currentUserId={currentUser?.id || ''}

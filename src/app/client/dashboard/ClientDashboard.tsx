@@ -84,35 +84,20 @@ export function ClientDashboard() {
   useEffect(() => {
     if (!chat || !user) return;
 
-    // ① Register handlers FIRST (before connect)
-    const unsubscribeConnect = chatService.onConnect(() => {
-      console.log('[ClientDashboard] WebSocket connected, syncing messages...');
-      // Reload messages to ensure we have latest
-      chatService.getMessages(chat.id).then(setMessages).catch(console.error);
-    });
+    // Connect to WebSocket
+    chatService.connect(chat.id, user.id, user.name || 'Client');
 
-    const unsubscribeMessage = chatService.onMessage((newMessage) => {
-      // Skip own messages - we already added them via optimistic update
-      if (newMessage.userId === user.id) return;
-
+    // Listen for incoming messages
+    const unsubscribe = chatService.onMessage((newMessage) => {
       setMessages(prev => {
-        // Check by ID
-        if (prev.some(msg => msg.id === newMessage.id)) return prev;
-        // Check by nonce (bulletproof deduplication)
-        if (newMessage.nonce && prev.some(msg => msg.nonce === newMessage.nonce)) return prev;
-        // Fallback: text+timestamp check
-        if (prev.some(msg => msg.text === newMessage.text && Math.abs(msg.ts - newMessage.ts) < 2000)) return prev;
+        const exists = prev.some(msg => msg.id === newMessage.id);
+        if (exists) return prev;
         return [...prev, newMessage];
       });
     });
 
-    // ② THEN connect (handlers are ready now)
-    console.log('[ClientDashboard] Connecting to chat:', chat.id);
-    chatService.connect(chat.id, user.id, user.name || 'Client');
-
     return () => {
-      unsubscribeConnect();
-      unsubscribeMessage();
+      unsubscribe();
       chatService.disconnect();
     };
   }, [chat, user]);
@@ -143,35 +128,18 @@ export function ClientDashboard() {
     );
   }
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!messageText.trim() || !chat || !user) return;
 
     const text = messageText;
-    const tempId = `temp-${Date.now()}`;
-    const nonce = crypto.randomUUID();
-
-    const optimisticMsg = {
-      id: tempId,
-      chatId: chat.id,
-      userId: user.id,
-      text,
-      ts: Date.now(),
-      senderName: user.name,
-      senderAvatar: user.avatar,
-      nonce
-    };
-
-    setMessages(prev => [...prev, optimisticMsg]);
-    setMessageText('');
+    setMessageText(''); // Optimistic clear
 
     try {
-      const sentMsg = await chatService.sendMessage(chat.id, text, user.id);
-      setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));
+      chatService.sendMessage(text);
     } catch (err) {
       console.error('Failed to send', err);
       toast.error('Failed to send message');
-      setMessages(prev => prev.filter(m => m.id !== tempId));
-      setMessageText(text);
+      setMessageText(text); // Restore on error
     }
   };
 
@@ -225,13 +193,13 @@ export function ClientDashboard() {
 
         <div className="bento-grid">
           <BentoTile
-            className="col-span-1 md:col-span-4 lg:col-span-4 lg:row-span-2 h-[500px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden"
+            className="col-span-1 md:col-span-4 lg:col-span-4 lg:row-span-4 min-h-[700px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             title="Quick Chat"
             icon={<MessageSquare className="size-5" />}
             noPadding
           >
-            <div className="flex h-full flex-col overflow-hidden min-h-0">
-              <div className="flex-shrink-0 p-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
+            <div className="flex h-full flex-col">
+              <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
                 <Avatar className="h-10 w-10 border border-white shadow-sm">
                   <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" />
                   <AvatarFallback>AD</AvatarFallback>
@@ -244,7 +212,7 @@ export function ClientDashboard() {
                   </p>
                 </div>
               </div>
-              <ScrollArea className="flex-1 min-h-0 p-4 bg-white">
+              <ScrollArea className="flex-1 p-4 bg-white" style={{ scrollBehavior: 'smooth' }}>
                 <div className="space-y-4">
                   {messages.length === 0 ? (
                     <div className="text-center text-muted-foreground text-sm py-8">
@@ -269,7 +237,7 @@ export function ClientDashboard() {
                   )}
                 </div>
               </ScrollArea>
-              <div className="flex-shrink-0 p-3 border-t border-gray-100 bg-gray-50/30">
+              <div className="p-3 border-t border-gray-100 bg-gray-50/30">
                 <div className="relative">
                   <Input
                     placeholder="Message admin..."
