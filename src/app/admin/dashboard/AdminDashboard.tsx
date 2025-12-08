@@ -1,4 +1,3 @@
-// Deployment trigger: 2024-12-08T14:02 - Quick Chat Debug
 import React, { useEffect, useState } from 'react';
 import { BentoTile } from '@/components/tiles/BentoTile';
 import {
@@ -124,18 +123,7 @@ export function AdminDashboard() {
   }, [selectedChatId, user]);
 
   const handleSendMessage = async () => {
-    // DEBUG: Log all values to diagnose the issue
-    console.log('[QuickChat DEBUG] handleSendMessage called');
-    console.log('[QuickChat DEBUG] messageText:', messageText);
-    console.log('[QuickChat DEBUG] selectedChatId:', selectedChatId);
-    console.log('[QuickChat DEBUG] user:', user);
-    console.log('[QuickChat DEBUG] user?.id:', user?.id);
-    console.log('[QuickChat DEBUG] user?.email:', user?.email);
-
-    if (!messageText.trim() || !selectedChatId || !user) {
-      console.log('[QuickChat DEBUG] Guard failed - returning early');
-      return;
-    }
+    if (!messageText.trim() || !selectedChatId || !user) return;
 
     const text = messageText;
     const tempId = `temp-${Date.now()}`;
@@ -154,15 +142,9 @@ export function AdminDashboard() {
     };
 
     setMessages(prev => [...prev, optimisticMsg]);
-    setMessageText(''); // Clear input
-
-    console.log('[QuickChat DEBUG] About to call sendMessage with:');
-    console.log('[QuickChat DEBUG]   chatId:', selectedChatId);
-    console.log('[QuickChat DEBUG]   text:', text);
-    console.log('[QuickChat DEBUG]   userId:', user.id);
+    setMessageText('');
 
     try {
-      // Send via REST API (proper 3-argument call)
       const sentMsg = await chatService.sendMessage(selectedChatId, text, user.id);
       // Replace temp message with real one
       setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));

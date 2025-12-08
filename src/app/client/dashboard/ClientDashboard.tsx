@@ -144,25 +144,12 @@ export function ClientDashboard() {
   }
 
   const handleSendMessage = async () => {
-    // DEBUG: Log all values to diagnose the issue
-    console.log('[ClientQuickChat DEBUG] handleSendMessage called');
-    console.log('[ClientQuickChat DEBUG] messageText:', messageText);
-    console.log('[ClientQuickChat DEBUG] chat:', chat);
-    console.log('[ClientQuickChat DEBUG] chat?.id:', chat?.id);
-    console.log('[ClientQuickChat DEBUG] user:', user);
-    console.log('[ClientQuickChat DEBUG] user?.id:', user?.id);
-    console.log('[ClientQuickChat DEBUG] user?.email:', user?.email);
-
-    if (!messageText.trim() || !chat || !user) {
-      console.log('[ClientQuickChat DEBUG] Guard failed - returning early');
-      return;
-    }
+    if (!messageText.trim() || !chat || !user) return;
 
     const text = messageText;
     const tempId = `temp-${Date.now()}`;
     const nonce = crypto.randomUUID();
 
-    // Optimistic update - add message immediately
     const optimisticMsg = {
       id: tempId,
       chatId: chat.id,
@@ -175,24 +162,16 @@ export function ClientDashboard() {
     };
 
     setMessages(prev => [...prev, optimisticMsg]);
-    setMessageText(''); // Clear input
-
-    console.log('[ClientQuickChat DEBUG] About to call sendMessage with:');
-    console.log('[ClientQuickChat DEBUG]   chatId:', chat.id);
-    console.log('[ClientQuickChat DEBUG]   text:', text);
-    console.log('[ClientQuickChat DEBUG]   userId:', user.id);
+    setMessageText('');
 
     try {
-      // Send via REST API (proper 3-argument call)
       const sentMsg = await chatService.sendMessage(chat.id, text, user.id);
-      // Replace temp message with real one
       setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));
     } catch (err) {
       console.error('Failed to send', err);
       toast.error('Failed to send message');
-      // Remove optimistic message on error
       setMessages(prev => prev.filter(m => m.id !== tempId));
-      setMessageText(text); // Restore on error
+      setMessageText(text);
     }
   };
 
