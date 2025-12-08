@@ -219,4 +219,16 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
             return bad(c, 'Failed to establish WebSocket connection');
         }
     });
+
+    // POST /api/chats/:chatId/read - Mark chat as read (reset unread count)
+    app.post('/api/chats/:chatId/read', async (c) => {
+        const { chatId } = c.req.param();
+        try {
+            await db.updateChat(c.env.DB, chatId, { unreadCount: 0 });
+            return ok(c, { success: true });
+        } catch (error) {
+            console.error('Failed to mark chat as read:', error);
+            return bad(c, 'Failed to mark chat as read');
+        }
+    });
 };

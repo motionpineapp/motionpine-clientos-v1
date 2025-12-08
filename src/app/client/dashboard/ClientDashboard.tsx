@@ -84,20 +84,35 @@ export function ClientDashboard() {
   useEffect(() => {
     if (!chat || !user) return;
 
-    // Connect to WebSocket
-    chatService.connect(chat.id, user.id, user.name || 'Client');
+    // ① Register handlers FIRST (before connect)
+    const unsubscribeConnect = chatService.onConnect(() => {
+      console.log('[ClientDashboard] WebSocket connected, syncing messages...');
+      // Reload messages to ensure we have latest
+      chatService.getMessages(chat.id).then(setMessages).catch(console.error);
+    });
 
-    // Listen for incoming messages
-    const unsubscribe = chatService.onMessage((newMessage) => {
+    const unsubscribeMessage = chatService.onMessage((newMessage) => {
+      // Skip own messages - we already added them via optimistic update
+      if (newMessage.userId === user.id) return;
+
       setMessages(prev => {
-        const exists = prev.some(msg => msg.id === newMessage.id);
-        if (exists) return prev;
+        // Check by ID
+        if (prev.some(msg => msg.id === newMessage.id)) return prev;
+        // Check by nonce (bulletproof deduplication)
+        if (newMessage.nonce && prev.some(msg => msg.nonce === newMessage.nonce)) return prev;
+        // Fallback: text+timestamp check
+        if (prev.some(msg => msg.text === newMessage.text && Math.abs(msg.ts - newMessage.ts) < 2000)) return prev;
         return [...prev, newMessage];
       });
     });
 
+    // ② THEN connect (handlers are ready now)
+    console.log('[ClientDashboard] Connecting to chat:', chat.id);
+    chatService.connect(chat.id, user.id, user.name || 'Client');
+
     return () => {
-      unsubscribe();
+      unsubscribeConnect();
+      unsubscribeMessage();
       chatService.disconnect();
     };
   }, [chat, user]);
@@ -128,17 +143,38 @@ export function ClientDashboard() {
     );
   }
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!messageText.trim() || !chat || !user) return;
 
     const text = messageText;
-    setMessageText(''); // Optimistic clear
+    const tempId = `temp-${Date.now()}`;
+    const nonce = crypto.randomUUID();
+
+    // Optimistic update - add message immediately
+    const optimisticMsg = {
+      id: tempId,
+      chatId: chat.id,
+      userId: user.id,
+      text,
+      ts: Date.now(),
+      senderName: user.name,
+      senderAvatar: user.avatar,
+      nonce
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+    setMessageText(''); // Clear input
 
     try {
-      chatService.sendMessage(text);
+      // Send via REST API (proper 3-argument call)
+      const sentMsg = await chatService.sendMessage(chat.id, text, user.id);
+      // Replace temp message with real one
+      setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));
     } catch (err) {
       console.error('Failed to send', err);
       toast.error('Failed to send message');
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== tempId));
       setMessageText(text); // Restore on error
     }
   };

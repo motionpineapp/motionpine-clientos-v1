@@ -349,7 +349,8 @@ export async function getChatMessages(db: D1Database, chatId: string): Promise<C
       text,
       ts,
       sender_name as senderName,
-      sender_avatar as senderAvatar
+      sender_avatar as senderAvatar,
+      nonce
     FROM chat_messages 
     WHERE chat_id = ? 
     ORDER BY ts ASC
@@ -360,8 +361,8 @@ export async function getChatMessages(db: D1Database, chatId: string): Promise<C
 
 export async function createChatMessage(db: D1Database, message: ChatMessage): Promise<ChatMessage> {
   await db.prepare(`
-    INSERT INTO chat_messages (id, chat_id, user_id, text, ts, sender_name, sender_avatar)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO chat_messages (id, chat_id, user_id, text, ts, sender_name, sender_avatar, nonce)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     message.id,
     message.chatId,
@@ -369,7 +370,8 @@ export async function createChatMessage(db: D1Database, message: ChatMessage): P
     message.text,
     message.ts,
     message.senderName || null,
-    message.senderAvatar || null
+    message.senderAvatar || null,
+    message.nonce || null
   ).run();
 
   return message;
