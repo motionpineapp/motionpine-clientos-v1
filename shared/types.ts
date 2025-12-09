@@ -29,7 +29,6 @@ export interface ChatMessage {
   senderName?: string;
   senderAvatar?: string;
   attachments?: string[]; // URLs
-  nonce?: string; // Unique ID for deduplication
 }
 // Client Management Types
 export type ClientStatus = 'active' | 'paused' | 'inactive';
