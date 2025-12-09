@@ -97,7 +97,7 @@ export interface TeamMember {
 export interface PineTransaction {
   id: string;
   clientId: string;
-  type: 'purchase' | 'usage';
+  type: 'purchase' | 'usage' | 'refund';
   amount: number;
   description: string;
   date: string; // ISO Date string
