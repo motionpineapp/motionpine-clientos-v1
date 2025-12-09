@@ -147,6 +147,43 @@ CREATE INDEX IF NOT EXISTS idx_team_members_email ON team_members(email);
 CREATE INDEX IF NOT EXISTS idx_team_members_status ON team_members(status);
 
 -- ============================================================================
+-- SERVICE TYPES TABLE (Pines Credit System)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS service_types (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    pine_cost INTEGER NOT NULL,
+    category TEXT CHECK(category IN ('reels', 'ads', 'longform')),
+    is_active INTEGER DEFAULT 1,
+    sort_order INTEGER DEFAULT 0,
+    created_at INTEGER DEFAULT (unixepoch()),
+    updated_at INTEGER DEFAULT (unixepoch())
+);
+
+CREATE INDEX IF NOT EXISTS idx_service_types_category ON service_types(category);
+CREATE INDEX IF NOT EXISTS idx_service_types_active ON service_types(is_active);
+
+-- ============================================================================
+-- PINE PACKAGES TABLE (Credit Purchase Options)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS pine_packages (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    pine_count INTEGER NOT NULL,
+    price_per_pine REAL NOT NULL,
+    total_price REAL NOT NULL,
+    stripe_price_id TEXT,
+    is_featured INTEGER DEFAULT 0,
+    is_active INTEGER DEFAULT 1,
+    sort_order INTEGER DEFAULT 0,
+    created_at INTEGER DEFAULT (unixepoch()),
+    updated_at INTEGER DEFAULT (unixepoch())
+);
+
+CREATE INDEX IF NOT EXISTS idx_pine_packages_active ON pine_packages(is_active);
+
+-- ============================================================================
 -- PINE TRANSACTIONS TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS pine_transactions (
@@ -156,8 +193,12 @@ CREATE TABLE IF NOT EXISTS pine_transactions (
     amount REAL NOT NULL,
     description TEXT NOT NULL,
     date TEXT NOT NULL,
+    project_id TEXT,
+    stripe_payment_id TEXT,
+    notes TEXT,
     created_at INTEGER DEFAULT (unixepoch()),
-    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_pine_transactions_client_id ON pine_transactions(client_id);
