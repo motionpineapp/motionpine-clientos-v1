@@ -139,11 +139,16 @@ class ChatService {
         this.reconnectAttempts = 0;
     }
 
-    async sendMessage(chatId: string, text: string, userId: string): Promise<ChatMessage> {
-        return api<ChatMessage>(`/api/chats/${chatId}/messages`, {
-            method: 'POST',
-            body: JSON.stringify({ text, userId }),
-        });
+    sendMessage(text: string): void {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            console.error('[ChatService] WebSocket not connected');
+            throw new Error('WebSocket not connected');
+        }
+
+        this.ws.send(JSON.stringify({
+            type: 'message',
+            text
+        }));
     }
 
     sendTypingIndicator(isTyping: boolean): void {
