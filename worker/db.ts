@@ -13,7 +13,9 @@ import type {
   Expense,
   Subscription,
   TeamMember,
-  PineTransaction
+  PineTransaction,
+  ServiceType,
+  PinePackage
 } from '@shared/types';
 
 // Internal type that includes password_hash
@@ -540,4 +542,145 @@ export async function getClientBalance(db: D1Database, clientId: string): Promis
   ).bind(clientId).first<{ balance: number | null }>();
 
   return result?.balance || 0;
+}
+
+export async function createPineTransaction(
+  db: D1Database,
+  transaction: Omit<PineTransaction, 'id'> & { id?: string }
+): Promise<PineTransaction> {
+  const id = transaction.id || crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  await db.prepare(`
+    INSERT INTO pine_transactions (id, client_id, type, amount, description, date, project_id, stripe_payment_id, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    id,
+    transaction.clientId,
+    transaction.type,
+    transaction.amount,
+    transaction.description,
+    transaction.date || now,
+    transaction.projectId || null,
+    transaction.stripePaymentId || null,
+    transaction.notes || null
+  ).run();
+
+  return { id, ...transaction, date: transaction.date || now };
+}
+
+// ============================================================================
+// SERVICE TYPES
+// ============================================================================
+
+export async function listServiceTypes(db: D1Database, activeOnly = true): Promise<ServiceType[]> {
+  const query = activeOnly
+    ? `SELECT id, name, description, pine_cost as pineCost, category, 
+       is_active as isActive, sort_order as sortOrder 
+       FROM service_types WHERE is_active = 1 ORDER BY sort_order ASC`
+    : `SELECT id, name, description, pine_cost as pineCost, category, 
+       is_active as isActive, sort_order as sortOrder 
+       FROM service_types ORDER BY sort_order ASC`;
+
+  const result = await db.prepare(query).all<ServiceType>();
+  return result.results || [];
+}
+
+export async function getServiceTypeById(db: D1Database, id: string): Promise<ServiceType | null> {
+  const result = await db.prepare(`
+    SELECT id, name, description, pine_cost as pineCost, category, 
+           is_active as isActive, sort_order as sortOrder
+    FROM service_types WHERE id = ?
+  `).bind(id).first<ServiceType>();
+
+  return result || null;
+}
+
+export async function createServiceType(db: D1Database, service: Omit<ServiceType, 'id'> & { id?: string }): Promise<ServiceType> {
+  const id = service.id || crypto.randomUUID();
+
+  await db.prepare(`
+    INSERT INTO service_types (id, name, description, pine_cost, category, is_active, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    id,
+    service.name,
+    service.description || null,
+    service.pineCost,
+    service.category,
+    service.isActive ? 1 : 0,
+    service.sortOrder || 0
+  ).run();
+
+  return { id, ...service };
+}
+
+export async function updateServiceType(db: D1Database, id: string, updates: Partial<ServiceType>): Promise<void> {
+  const sets: string[] = [];
+  const values: unknown[] = [];
+
+  if (updates.name !== undefined) { sets.push('name = ?'); values.push(updates.name); }
+  if (updates.description !== undefined) { sets.push('description = ?'); values.push(updates.description); }
+  if (updates.pineCost !== undefined) { sets.push('pine_cost = ?'); values.push(updates.pineCost); }
+  if (updates.category !== undefined) { sets.push('category = ?'); values.push(updates.category); }
+  if (updates.isActive !== undefined) { sets.push('is_active = ?'); values.push(updates.isActive ? 1 : 0); }
+  if (updates.sortOrder !== undefined) { sets.push('sort_order = ?'); values.push(updates.sortOrder); }
+
+  if (sets.length === 0) return;
+
+  sets.push('updated_at = unixepoch()');
+  values.push(id);
+
+  await db.prepare(`UPDATE service_types SET ${sets.join(', ')} WHERE id = ?`).bind(...values).run();
+}
+
+// ============================================================================
+// PINE PACKAGES
+// ============================================================================
+
+export async function listPinePackages(db: D1Database, activeOnly = true): Promise<PinePackage[]> {
+  const query = activeOnly
+    ? `SELECT id, name, pine_count as pineCount, price_per_pine as pricePerPine, 
+       total_price as totalPrice, stripe_price_id as stripePriceId,
+       is_featured as isFeatured, is_active as isActive, sort_order as sortOrder
+       FROM pine_packages WHERE is_active = 1 ORDER BY sort_order ASC`
+    : `SELECT id, name, pine_count as pineCount, price_per_pine as pricePerPine, 
+       total_price as totalPrice, stripe_price_id as stripePriceId,
+       is_featured as isFeatured, is_active as isActive, sort_order as sortOrder
+       FROM pine_packages ORDER BY sort_order ASC`;
+
+  const result = await db.prepare(query).all<PinePackage>();
+  return result.results || [];
+}
+
+export async function getPinePackageById(db: D1Database, id: string): Promise<PinePackage | null> {
+  const result = await db.prepare(`
+    SELECT id, name, pine_count as pineCount, price_per_pine as pricePerPine, 
+           total_price as totalPrice, stripe_price_id as stripePriceId,
+           is_featured as isFeatured, is_active as isActive, sort_order as sortOrder
+    FROM pine_packages WHERE id = ?
+  `).bind(id).first<PinePackage>();
+
+  return result || null;
+}
+
+export async function updatePinePackage(db: D1Database, id: string, updates: Partial<PinePackage>): Promise<void> {
+  const sets: string[] = [];
+  const values: unknown[] = [];
+
+  if (updates.name !== undefined) { sets.push('name = ?'); values.push(updates.name); }
+  if (updates.pineCount !== undefined) { sets.push('pine_count = ?'); values.push(updates.pineCount); }
+  if (updates.pricePerPine !== undefined) { sets.push('price_per_pine = ?'); values.push(updates.pricePerPine); }
+  if (updates.totalPrice !== undefined) { sets.push('total_price = ?'); values.push(updates.totalPrice); }
+  if (updates.stripePriceId !== undefined) { sets.push('stripe_price_id = ?'); values.push(updates.stripePriceId); }
+  if (updates.isFeatured !== undefined) { sets.push('is_featured = ?'); values.push(updates.isFeatured ? 1 : 0); }
+  if (updates.isActive !== undefined) { sets.push('is_active = ?'); values.push(updates.isActive ? 1 : 0); }
+  if (updates.sortOrder !== undefined) { sets.push('sort_order = ?'); values.push(updates.sortOrder); }
+
+  if (sets.length === 0) return;
+
+  sets.push('updated_at = unixepoch()');
+  values.push(id);
+
+  await db.prepare(`UPDATE pine_packages SET ${sets.join(', ')} WHERE id = ?`).bind(...values).run();
 }

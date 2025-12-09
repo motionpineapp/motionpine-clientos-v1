@@ -95,11 +95,38 @@ export interface TeamMember {
   joinedAt: string; // ISO Date string
 }
 // Pine Credit System Types
+export type ServiceCategory = 'reels' | 'ads' | 'longform';
+
+export interface ServiceType {
+  id: string;
+  name: string;
+  description?: string;
+  pineCost: number;
+  category: ServiceCategory;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface PinePackage {
+  id: string;
+  name: string;
+  pineCount: number;
+  pricePerPine: number;
+  totalPrice: number;
+  stripePriceId?: string;
+  isFeatured: boolean;
+  isActive: boolean;
+  sortOrder: number;
+}
+
 export interface PineTransaction {
   id: string;
   clientId: string;
-  type: 'purchase' | 'usage';
+  type: 'purchase' | 'usage' | 'refund';
   amount: number;
   description: string;
   date: string; // ISO Date string
+  projectId?: string;
+  stripePaymentId?: string;
+  notes?: string;
 }
