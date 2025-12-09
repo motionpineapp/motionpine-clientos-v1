@@ -79,25 +79,12 @@ export function ClientChatPage() {
   const handleSendMessage = async (text: string) => {
     if (!chat || !currentUser) return;
 
-    const tempId = `temp-${Date.now()}`;
-    const optimisticMsg: ChatMessage = {
-      id: tempId,
-      chatId: chat.id,
-      userId: currentUser.id,
-      text,
-      ts: Date.now(),
-      senderName: currentUser.name,
-      senderAvatar: currentUser.avatar
-    };
-
-    setMessages(prev => [...prev, optimisticMsg]);
     setIsSending(true);
 
     try {
-      const sentMsg = await chatService.sendMessage(chat.id, text, currentUser.id);
-      setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));
+      // Send via WebSocket - message will be received via onMessage listener
+      chatService.sendMessage(text);
     } catch (error) {
-      setMessages(prev => prev.filter(m => m.id !== tempId));
       toast.error('Failed to send message');
     } finally {
       setIsSending(false);
