@@ -242,12 +242,12 @@ export function AdminDashboard() {
 
           {/* --- MIDDLE ROW --- */}
           <BentoTile
-            className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 min-h-[500px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+            className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 h-[500px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden"
             title="Quick Chat"
             icon={<MessageSquare className="size-5" />}
             noPadding
           >
-            <div className="flex h-full flex-col">
+            <div className="flex h-full flex-col overflow-hidden min-h-0">
               <div className="flex-1 flex overflow-hidden">
                 <div className="w-20 border-r border-gray-100 flex flex-col items-center py-4 gap-4 bg-gray-50/50 overflow-y-auto">
                   {chats.slice(0, 5).map((chat) => (
@@ -271,8 +271,8 @@ export function AdminDashboard() {
                     </Button>
                   </div>
                 </div>
-                <div className="flex-1 flex flex-col bg-white">
-                  <ScrollArea className="flex-1 p-4">
+                <div className="flex-1 flex flex-col bg-white min-h-0">
+                  <ScrollArea className="flex-1 min-h-0 p-4">
                     <div className="space-y-4">
                       {isLoadingMessages ? (
                         <div className="flex justify-center p-4">
@@ -290,8 +290,8 @@ export function AdminDashboard() {
                               </Avatar>
                             )}
                             <div className={`p-3 rounded-2xl text-sm max-w-[80%] ${msg.userId === user?.id
-                                ? 'bg-primary text-white rounded-tr-none'
-                                : 'bg-gray-100 rounded-tl-none'
+                              ? 'bg-primary text-white rounded-tr-none'
+                              : 'bg-gray-100 rounded-tl-none'
                               }`}>
                               {msg.text}
                             </div>
@@ -300,7 +300,7 @@ export function AdminDashboard() {
                       )}
                     </div>
                   </ScrollArea>
-                  <div className="p-3 border-t border-gray-100 bg-gray-50/30">
+                  <div className="flex-shrink-0 p-3 border-t border-gray-100 bg-gray-50/30">
                     <div className="relative">
                       <Input
                         placeholder="Type a message..."
