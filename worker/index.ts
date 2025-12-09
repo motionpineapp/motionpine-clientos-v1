@@ -7,6 +7,7 @@ import { userRoutes } from './user-routes';
 import { uploadRoutes } from './upload-routes';
 import { settingsRoutes } from './settings-routes';
 import { chatRoutes } from './chat-routes';
+import { pinesRoutes } from './pines-routes';
 import { Env, GlobalDurableObject } from './core-utils';
 import { ChatRoom } from './chat-room';
 
@@ -38,6 +39,7 @@ userRoutes(app);
 uploadRoutes(app);
 settingsRoutes(app);
 chatRoutes(app);
+pinesRoutes(app);
 
 app.get('/api/health', (c) => c.json({ success: true, data: { status: 'healthy', timestamp: new Date().toISOString() } }));
 

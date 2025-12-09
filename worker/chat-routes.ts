@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { Env, ok, bad, notFound } from './core-utils';
+import { Env } from './core-utils';
 import * as db from './db';
 import { Chat, ChatMessage } from '@shared/types';
 
@@ -9,10 +9,10 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
     app.get('/api/chats', async (c) => {
         try {
             const chats = await db.listChats(c.env.DB);
-            return ok(c, { items: chats });
+            return c.json({ success: true, items: chats });
         } catch (error) {
             console.error('Failed to list chats:', error);
-            return bad(c, 'Failed to list chats');
+            return c.json({ success: false, error: 'Failed to list chats' }, 500);
         }
     });
 
@@ -38,12 +38,12 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
 
             const chat = await db.getChatByClientId(c.env.DB, targetClientId);
             if (!chat) {
-                return notFound(c, 'Chat not found');
+                return c.json({ success: false, error: 'Chat not found' }, 404);
             }
-            return ok(c, chat);
+            return c.json(chat);
         } catch (error) {
             console.error('Failed to get chat:', error);
-            return bad(c, 'Failed to get chat');
+            return c.json({ success: false, error: 'Failed to get chat' }, 500);
         }
     });
 
@@ -54,7 +54,7 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
             console.log('[Chat] Creating chat for clientId:', body.clientId);
 
             if (!body.clientId) {
-                return bad(c, 'Client ID is required');
+                return c.json({ success: false, error: 'Client ID is required' }, 400);
             }
 
             let targetClientId = body.clientId;
@@ -97,14 +97,14 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
 
             if (!client) {
                 console.error('[Chat] Failed to resolve client for ID:', body.clientId);
-                return notFound(c, 'Client not found. Unable to create chat.');
+                return c.json({ success: false, error: 'Client not found. Unable to create chat.' }, 404);
             }
 
             // Check if chat already exists for the resolved Client ID
             const existing = await db.getChatByClientId(c.env.DB, targetClientId);
             if (existing) {
                 console.log('[Chat] Returning existing chat:', existing.id);
-                return ok(c, existing);
+                return c.json(existing);
             }
 
             const newChat: Chat = {
@@ -118,10 +118,10 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
 
             const created = await db.createChat(c.env.DB, newChat);
             console.log('[Chat] Created new chat:', created.id);
-            return ok(c, created);
+            return c.json(created, 201);
         } catch (error) {
             console.error('Failed to create chat:', error);
-            return bad(c, 'Failed to create chat');
+            return c.json({ success: false, error: 'Failed to create chat' }, 500);
         }
     });
 
@@ -130,10 +130,10 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
         const { chatId } = c.req.param();
         try {
             const messages = await db.getChatMessages(c.env.DB, chatId);
-            return ok(c, messages);
+            return c.json(messages);
         } catch (error) {
             console.error('Failed to get messages:', error);
-            return bad(c, 'Failed to get messages');
+            return c.json({ success: false, error: 'Failed to get messages' }, 500);
         }
     });
 
@@ -143,7 +143,7 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
         try {
             const body = await c.req.json<{ text: string; userId: string }>();
             if (!body.text || !body.userId) {
-                return bad(c, 'Text and User ID are required');
+                return c.json({ success: false, error: 'Text and User ID are required' }, 400);
             }
 
             // Get sender details
@@ -186,10 +186,10 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
                 // Don't fail the request if broadcast fails
             }
 
-            return ok(c, created);
+            return c.json(created, 201);
         } catch (error) {
             console.error('Failed to send message:', error);
-            return bad(c, 'Failed to send message');
+            return c.json({ success: false, error: 'Failed to send message' }, 500);
         }
     });
 
@@ -201,7 +201,7 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
         const userName = url.searchParams.get('userName');
 
         if (!userId || !userName) {
-            return bad(c, 'Missing userId or userName');
+            return c.json({ success: false, error: 'Missing userId or userName' }, 400);
         }
 
         try {
@@ -214,7 +214,7 @@ export const chatRoutes = (app: Hono<{ Bindings: Env }>) => {
             return chatRoom.fetch(c.req.raw);
         } catch (error) {
             console.error('Failed to establish WebSocket:', error);
-            return bad(c, 'Failed to establish WebSocket connection');
+            return c.json({ success: false, error: 'Failed to establish WebSocket connection' }, 500);
         }
     });
 };
