@@ -24,6 +24,7 @@ import { ChatPage } from '@/app/admin/chat/ChatPage';
 import { ExpensesPage } from '@/app/admin/expenses/ExpensesPage';
 import { TeamsPage } from '@/app/admin/teams/TeamsPage';
 import { SettingsPage } from '@/app/admin/settings/SettingsPage';
+import { PinesPage } from '@/app/admin/pines/PinesPage';
 import { ClientProjectsPage } from '@/app/client/projects/ClientProjectsPage';
 import { ClientChatPage } from '@/app/client/chat/ClientChatPage';
 import { IntakePage } from '@/app/client/intake/IntakePage';
@@ -97,6 +98,7 @@ const router = createBrowserRouter([
           { path: "chat", element: <ChatPage /> },
           { path: "expenses", element: <ExpensesPage /> },
           { path: "teams", element: <TeamsPage /> },
+          { path: "pines", element: <PinesPage /> },
           { path: "settings", element: <SettingsPage /> },
         ]
       },

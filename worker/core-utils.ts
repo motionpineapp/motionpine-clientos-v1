@@ -12,6 +12,11 @@ export interface Env {
   ChatRoom: DurableObjectNamespace;
   DB: D1Database;
   R2_BUCKET: R2Bucket;
+  // Stripe payment integration
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  STRIPE_SUCCESS_URL?: string;
+  STRIPE_CANCEL_URL?: string;
 }
 
 type Doc<T> = { v: number; data: T };
