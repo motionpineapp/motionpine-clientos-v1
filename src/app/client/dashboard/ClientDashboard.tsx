@@ -183,7 +183,7 @@ export function ClientDashboard() {
                 <p className="text-gray-600 text-xs leading-relaxed">
                   Ready to launch your next campaign? Fill out the intake form to get started.
                 </p>
-                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold mt-3 w-full" onClick={() => navigate('/client/intake')}>
+                <Button size="sm" className="btn-divine mt-3 w-full" onClick={() => navigate('/client/intake')}>
                   Create Request
                 </Button>
               </div>
